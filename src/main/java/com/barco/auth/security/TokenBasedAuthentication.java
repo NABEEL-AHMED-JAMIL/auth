@@ -1,12 +1,14 @@
 package com.barco.auth.security;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.google.gson.Gson;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.core.userdetails.UserDetails;
 
-/**
- * @author Nabeel.amd
- */
+
+@JsonIgnoreProperties(ignoreUnknown=true)
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class TokenBasedAuthentication extends AbstractAuthenticationToken {
 
     private String token;
@@ -31,4 +33,5 @@ public class TokenBasedAuthentication extends AbstractAuthenticationToken {
 
     @Override
     public String toString() { return new Gson().toJson(this); }
+
 }

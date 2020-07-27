@@ -1,8 +1,9 @@
 package com.barco.auth.config;
 
-import com.barco.auth.security.*;
-import com.barco.auth.domain.service.CustomUserDetailsService;
-import com.barco.auth.filter.TokenAuthenticationFilter;
+
+import com.barco.auth.security.RestAuthenticationEntryPoint;
+import com.barco.auth.service.Impl.CustomUserDetailsService;
+import com.barco.common.filter.TokenAuthenticationFilter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,8 +17,8 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+
 
 /**
  * @author Nabeel.amd
@@ -32,17 +33,17 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
  */
 @Configuration
 @EnableWebSecurity
-@EnableGlobalMethodSecurity(prePostEnabled = true)
+@EnableGlobalMethodSecurity(prePostEnabled = true, securedEnabled = true)
 public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 
     public Logger logger = LogManager.getLogger(WebSecurityConfig.class);
 
-    private final String LOGIN_PATH = "/auth/login";
-    private final String SIGNUP_PATH = "/auth/signup";
-    private final String LOGOUT_PATH = "/auth/logout";
-    private final String FORGOT_PASSWORD_PATH = "/auth/forgotPassword";
-    private final String USER_VERIFYING_PATH = "/auth/userVerify";
-    private final String CHANGE_PASSWORD_PATH = "/auth/changePassword";
+    private static final String[] AUTH_WHITELIST = {
+        "/v2/api-docs", "/swagger-resources",
+        "/swagger-resources/**", "/configuration/ui",
+        "/configuration/security", "/swagger-ui.html",
+        "/webjars/**","/public.json/**","/auth.json/**"
+    };
 
     @Autowired
     private RestAuthenticationEntryPoint restAuthenticationEntryPoint;
@@ -51,14 +52,20 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
     private CustomUserDetailsService jwtUserDetailsService;
 
     @Bean
-    public TokenAuthenticationFilter jwtAuthenticationTokenFilter() throws Exception { return new TokenAuthenticationFilter(); }
+    public TokenAuthenticationFilter jwtAuthenticationTokenFilter() throws Exception {
+        return new TokenAuthenticationFilter();
+    }
 
     @Bean
     @Override
-    public AuthenticationManager authenticationManagerBean() throws Exception { return super.authenticationManagerBean(); }
+    public AuthenticationManager authenticationManagerBean() throws Exception {
+        return super.authenticationManagerBean();
+    }
 
     @Bean
-    public PasswordEncoder passwordEncoder() { return new BCryptPasswordEncoder(); }
+    public BCryptPasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
 
     @Autowired
     public void configureGlobal(AuthenticationManagerBuilder authenticationManagerBuilder) throws Exception {
@@ -67,10 +74,13 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 
     @Override
     protected void configure(HttpSecurity http) throws Exception {
-        http.cors().and().csrf().disable().authorizeRequests().antMatchers(LOGIN_PATH, SIGNUP_PATH, LOGOUT_PATH,
-            FORGOT_PASSWORD_PATH, USER_VERIFYING_PATH, CHANGE_PASSWORD_PATH).permitAll().anyRequest().authenticated()
-            .and().exceptionHandling().authenticationEntryPoint(this.restAuthenticationEntryPoint).and()
-            .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS);
+        http.cors().and()
+            .csrf().disable().authorizeRequests()
+            .antMatchers(AUTH_WHITELIST)
+            .permitAll().anyRequest().authenticated()
+            .and().exceptionHandling().authenticationEntryPoint(this.restAuthenticationEntryPoint)
+            .and().sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS);
         http.addFilterBefore(jwtAuthenticationTokenFilter(), UsernamePasswordAuthenticationFilter.class);
     }
+
 }

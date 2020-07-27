@@ -11,9 +11,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
-/**
- * @author Nabeel.amd
- */
+
 @Component
 @Scope("prototype")
 public class RestAuthenticationEntryPoint implements AuthenticationEntryPoint {

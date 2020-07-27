@@ -14,9 +14,7 @@ import springfox.documentation.spi.DocumentationType;
 import springfox.documentation.spring.web.plugins.Docket;
 import springfox.documentation.swagger2.annotations.EnableSwagger2;
 
-/**
- * @author Nabeel.amd
- */
+
 @Configuration
 @EnableSwagger2
 public class SwaggerConfig {
@@ -26,14 +24,19 @@ public class SwaggerConfig {
     @Bean
     public Docket productApi() {
         return new Docket(DocumentationType.SWAGGER_2).select()
-        .apis(RequestHandlerSelectors.any()).paths(Predicates.not(PathSelectors.regex("/error")))
+        .apis(RequestHandlerSelectors.any())
+        .paths(Predicates.not(PathSelectors.regex("/error")))
         .build().apiInfo(apiInfo());
     }
 
     private ApiInfo apiInfo() {
-        return new ApiInfoBuilder().title("Barco-Auth-Api").description("Api Use To Perform Auth")
-            .termsOfServiceUrl("http://localhost:8085/api/converter/swagger-ui.html")
-            .contact(new Contact("Barco.Auth.Support", "https://github.com/NABEEL-AHMED-JAMIL", "nabeel.amd93@gmail.com"))
-            .license("Private Source").licenseUrl("https://www.ballistic.org/licenses/LICENSE-2.0").version("1.0.0").build();
+        return new ApiInfoBuilder().title("Barco Cron API")
+            .description("Api use to perform pdf converter")
+            .termsOfServiceUrl("http://localhost:9098/api/barco/swagger-ui.html")
+            .contact(new Contact("Barco.Support", "https://github.com/NABEEL-AHMED-JAMIL",
+                "nabeel.amd93@gmail.com&adeelasghar2011@gmail.com"))
+            .license("Private Source")
+            .licenseUrl("https://www.ballistic.org/licenses/LICENSE-2.0").version("1.0.0").build();
     }
+
 }

@@ -1,7 +1,7 @@
-package com.barco.auth.domain.service;
+package com.barco.auth.service.Impl;
 
-import com.barco.model.pojo.User;
-import com.barco.model.service.UserService;
+import com.barco.model.enums.Status;
+import com.barco.model.pojo.AppUser;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,9 +13,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.Optional;
 
-/**
- * @author Nabeel.amd
- */
 @Service
 @Scope("prototype")
 public class CustomUserDetailsService implements UserDetailsService {
@@ -23,11 +20,11 @@ public class CustomUserDetailsService implements UserDetailsService {
     public Logger logger = LogManager.getLogger(CustomUserDetailsService.class);
 
     @Autowired
-    private UserService userService;
+    private AuthService appUserService;
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        Optional<User> user = this.userService.findByUsernameAndStatus(username);
+        Optional<AppUser> user = this.appUserService.findByUsernameAndStatus(username, Status.Active);
         if (!user.isPresent()) {
             throw new UsernameNotFoundException(String.format("No user found with username '%s'.", username));
         } else {
