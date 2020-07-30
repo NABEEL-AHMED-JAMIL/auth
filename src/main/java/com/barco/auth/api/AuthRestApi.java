@@ -14,6 +14,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 
@@ -36,17 +38,14 @@ public class AuthRestApi {
     @ApiOperation(value = "User login.", notes = "Signup detail.")
     public @ResponseBody ResponseDTO login(@RequestBody JwtAuthenticationRequest authenticationReq) {
         try {
-            this.authenticationManager
+            final Authentication authentication = this.authenticationManager
                 .authenticate(new UsernamePasswordAuthenticationToken(authenticationReq.getUsername().toLowerCase().trim(),
                     authenticationReq.getPassword()));
+            // Inject into security context
+            SecurityContextHolder.getContext().setAuthentication(authentication);
+            return this.authService.login(authenticationReq);
           } catch (Exception ex) {
             return new ResponseDTO(ApiCode.ERROR, ApplicationConstants.INVALID_CREDENTIAL_MSG);
-        }
-        ResponseDTO responseDTO = authService.login(authenticationReq);
-        if(responseDTO != null) {
-            return responseDTO;
-        } else {
-            return new ResponseDTO(ApiCode.ERROR, responseDTO.getMessage());
         }
     }
 

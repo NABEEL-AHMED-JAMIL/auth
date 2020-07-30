@@ -36,6 +36,7 @@
 
 	<properties>
 		<java.version>1.8</java.version>
+		<postgresql.version>42.2.5</postgresql.version>
 		<jpa.version>2.1.8.RELEASE</jpa.version>
 		<disruptor.version>3.4.2</disruptor.version>
 		<swagger.version>2.9.2</swagger.version>
@@ -52,17 +53,6 @@
 					<artifactId>spring-boot-starter-logging</artifactId>
 				</exclusion>
 			</exclusions>
-		</dependency>
-
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-security</artifactId>
-		</dependency>
-
-		<dependency>
-			<groupId>org.postgresql</groupId>
-			<artifactId>postgresql</artifactId>
-			<scope>runtime</scope>
 		</dependency>
 
 		<dependency>
