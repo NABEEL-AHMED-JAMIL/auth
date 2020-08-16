@@ -55,6 +55,7 @@
 			</exclusions>
 		</dependency>
 
+		<!--	model package import	-->
 		<dependency>
 			<groupId>com.barco</groupId>
 			<artifactId>model</artifactId>
@@ -62,6 +63,7 @@
 			<classifier>barco-model</classifier>
 		</dependency>
 
+		<!--	common package import	-->
 		<dependency>
 			<groupId>com.barco</groupId>
 			<artifactId>common</artifactId>

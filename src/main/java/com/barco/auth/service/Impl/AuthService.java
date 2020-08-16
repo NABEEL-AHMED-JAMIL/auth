@@ -1,6 +1,5 @@
 package com.barco.auth.service.Impl;
 
-
 import com.barco.auth.repository.AppUserRepository;
 import com.barco.auth.service.AuthTokenService;
 import com.barco.common.security.TokenHelper;
@@ -58,8 +57,7 @@ public class AuthService implements AuthTokenService {
             appUser = this.appUserRepository.findByUsernameAndStatusNot(jwtAuthenticationRequest.getUsername().trim(), Status.Delete);
             if(appUser == null) {
                 return new ResponseDTO(ApiCode.HTTP_404, ApplicationConstants.USER_NOT_FOUND,  null);
-            }
-            if (appUser.getStatus() != Status.Active) {
+            } else if (appUser.getStatus() != Status.Active) {
                 if (appUser.getStatus().equals(Status.Pending)) {
                     return new ResponseDTO(ApiCode.PENDING, ApplicationConstants.PENDING_ACCOUNT_MSG, null);
                 } else if (appUser.getStatus().equals(Status.Inactive)) {
@@ -90,11 +88,11 @@ public class AuthService implements AuthTokenService {
     private UserDTO setUserResponse(AppUser appUser) {
         UserDTO userDTO = new UserDTO();
         if(appUser != null) {
-            userDTO.setAppUserId(appUser.getId());
-            userDTO.setFirstName(appUser.getFirstName());
-            userDTO.setLastName(appUser.getLastName());
-            userDTO.setUsername(appUser.getUsername());
-            userDTO.setUserType(appUser.getUserType());
+            if(appUser.getId() != null) { userDTO.setAppUserId(appUser.getId()); }
+            if(appUser.getFirstName() != null) { userDTO.setFirstName(appUser.getFirstName()); }
+            if(appUser.getLastName() != null) { userDTO.setLastName(appUser.getLastName()); }
+            if(appUser.getUsername() != null) { userDTO.setUsername(appUser.getUsername()); }
+            if(appUser.getUserType() != null) { userDTO.setUserType(appUser.getUserType()); }
             appUser.getAuthorities().forEach(o -> {
                 userDTO.setRole(o.getAuthority());
             });

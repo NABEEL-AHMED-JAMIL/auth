@@ -1,6 +1,5 @@
 package com.barco.auth.service;
 
-
 import com.barco.model.dto.AuthorityDto;
 import com.barco.model.dto.ResponseDTO;
 
