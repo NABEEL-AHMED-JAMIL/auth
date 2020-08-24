@@ -1,6 +1,6 @@
 package com.barco.auth.service.Impl;
 
-import com.barco.auth.repository.AppUserRepository;
+import com.barco.model.repository.AppUserRepository;
 import com.barco.auth.service.AuthTokenService;
 import com.barco.common.security.TokenHelper;
 import com.barco.common.utility.ApplicationConstants;

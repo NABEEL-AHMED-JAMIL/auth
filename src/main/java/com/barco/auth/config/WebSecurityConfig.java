@@ -2,7 +2,7 @@ package com.barco.auth.config;
 
 
 import com.barco.auth.security.RestAuthenticationEntryPoint;
-import com.barco.auth.service.Impl.CustomUserDetailsService;
+import com.barco.model.service.CustomUserDetailsService;
 import com.barco.common.filter.TokenAuthenticationFilter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

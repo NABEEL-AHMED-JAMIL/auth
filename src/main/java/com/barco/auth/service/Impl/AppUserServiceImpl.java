@@ -1,7 +1,7 @@
 package com.barco.auth.service.Impl;
 
 
-import com.barco.auth.repository.AppUserRepository;
+import com.barco.model.repository.AppUserRepository;
 import com.barco.auth.repository.AuthorityRepository;
 import com.barco.auth.repository.UserVerificationRepository;
 import com.barco.auth.service.AppUserService;
