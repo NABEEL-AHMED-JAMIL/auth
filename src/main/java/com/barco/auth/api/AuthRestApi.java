@@ -2,6 +2,7 @@ package com.barco.auth.api;
 
 import com.barco.auth.service.AuthTokenService;
 import com.barco.common.utility.ApplicationConstants;
+import com.barco.common.utility.ExceptionUtil;
 import com.barco.model.dto.JwtAuthenticationRequest;
 import com.barco.model.dto.ResponseDTO;
 import com.barco.model.enums.ApiCode;
@@ -28,10 +29,10 @@ public class AuthRestApi {
     public Logger logger = LogManager.getLogger(AuthRestApi.class);
 
     @Autowired
-    private AuthenticationManager authenticationManager;
+    private AuthTokenService authService;
 
     @Autowired
-    private AuthTokenService authService;
+    private AuthenticationManager authenticationManager;
 
     @ResponseStatus(HttpStatus.OK)
     @RequestMapping(value = "/login", method = RequestMethod.POST)
@@ -39,12 +40,13 @@ public class AuthRestApi {
     public @ResponseBody ResponseDTO login(@RequestBody JwtAuthenticationRequest authenticationReq) {
         try {
             final Authentication authentication = this.authenticationManager
-                .authenticate(new UsernamePasswordAuthenticationToken(authenticationReq.getUsername().toLowerCase().trim(),
-                    authenticationReq.getPassword()));
+                .authenticate(new UsernamePasswordAuthenticationToken(authenticationReq.getUsername()
+                .toLowerCase().trim(), authenticationReq.getPassword()));
             // Inject into security context
             SecurityContextHolder.getContext().setAuthentication(authentication);
             return this.authService.login(authenticationReq);
           } catch (Exception ex) {
+            logger.info("Error during login " + ExceptionUtil.getRootCause(ex));
             return new ResponseDTO(ApiCode.ERROR, ApplicationConstants.INVALID_CREDENTIAL_MSG);
         }
     }

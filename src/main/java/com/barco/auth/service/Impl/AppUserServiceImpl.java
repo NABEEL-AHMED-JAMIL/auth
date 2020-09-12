@@ -63,84 +63,50 @@ public class AppUserServiceImpl implements AppUserService {
 
 
     @Override
-    public ResponseDTO saveUserRegistration(UserDTO userDTO) {
-        if (StringUtils.isEmpty(userDTO.getFirstName()) || StringUtils.isEmpty(userDTO.getLastName())) {
-            return new ResponseDTO(ApiCode.INVALID_REQUEST, ApplicationConstants.FIRST_NAME_AND_LAST_NAME_REQUIRED);
-        } else if (StringUtils.isEmpty(userDTO.getUsername()) || !BarcoUtil.isValidEmail(userDTO.getUsername())) {
-            return new ResponseDTO(ApiCode.INVALID_REQUEST, ApplicationConstants.INVALID_EMAIL);
-        } else if (StringUtils.isEmpty(userDTO.getPassword())) {
-            return new ResponseDTO(ApiCode.INVALID_REQUEST, ApplicationConstants.PASSWORD_SHOULD_NOT_BE_EMPTY);
-        } else if (StringUtils.isEmpty(userDTO.getRole()) || !this.authorityRepository.findByRole(userDTO.getRole()).isPresent()) {
-            return new ResponseDTO(ApiCode.INVALID_REQUEST, ApplicationConstants.INVALID_ROLE);
-        } else if (StringUtils.isEmpty(userDTO.getTopicId()) || this.notificationClientRepository
-                .findByTopicId(userDTO.getTopicId()).isPresent()) {
-            return new ResponseDTO(ApiCode.INVALID_REQUEST, ApplicationConstants.TOPIC_ID_EXIST);
-        } else if (StringUtils.isEmpty(userDTO.getClientPath()) || this.notificationClientRepository
-                .findByClientPath(userDTO.getClientPath()).isPresent()) {
-            return new ResponseDTO(ApiCode.INVALID_REQUEST, ApplicationConstants.CLIENT_PATH_EXIST);
-        } else if (this.appUserRepository.findByUsername(userDTO.getUsername()).isPresent()) {
-            return new ResponseDTO(ApiCode.INVALID_REQUEST, ApplicationConstants.EMAIL_ALREADY_EXIST);
+    public ResponseDTO saveUserRegistration(UserDTO userDTO) throws Exception {
+        ResponseDTO saveUserValidation = this.validation(userDTO);
+        if (saveUserValidation != null) {
+            return saveUserValidation;
         }
-        // save detail into db
-        AppUser appUser = new AppUser();
-        // first name
-        if (StringUtils.isNotEmpty(userDTO.getFirstName())) {
-            appUser.setFirstName(userDTO.getFirstName());
+        // save app user detail
+        AppUser appUser = saveUserDetail(userDTO);
+        // notification-client-detail
+        this.saveNotificationClientDetail(userDTO, appUser);
+        String token = this.getToken();
+        this.saveUserVerification(appUser, token);
+        // user id set back for dto
+        userDTO.setAppUserId(appUser.getId());
+        userDTO.setToken(token);
+        this.saveUserRegistrationEmailDetail(userDTO);
+        return new ResponseDTO(ApiCode.SUCCESS, ApplicationConstants.SUCCESS_MSG, userDTO);
+    }
+
+    @Override
+    public ResponseDTO saveUserRegistrationByAdmin(UserDTO userDTO) throws Exception {
+        if(userDTO != null && userDTO.getAppUserId() == null) {
+            return new ResponseDTO(ApiCode.INVALID_REQUEST, ApplicationConstants.ADMIN_USER_DETAIL_MISSING);
         }
-        // last name
-        if (StringUtils.isNotEmpty(userDTO.getLastName())) {
-            appUser.setLastName(userDTO.getLastName());
+        ResponseDTO saveUserValidation = this.validation(userDTO);
+        if (saveUserValidation != null) {
+            return saveUserValidation;
         }
-        // user name
-        if (StringUtils.isNotBlank(userDTO.getUsername())) {
-            appUser.setUsername(userDTO.getUsername());
+        // save app user detail
+        AppUser appUser = saveUserDetail(userDTO);
+        // notification-client-detail
+        this.saveNotificationClientDetail(userDTO, appUser);
+        String token = this.getToken();
+        this.saveUserVerification(appUser, token);
+        AppUser adminUser = this.appUserRepository.findById(userDTO.getAppUserId()).get();
+        Set<AppUser> subUsers = adminUser.getSubUser();
+        if(subUsers != null) {
+            subUsers.add(appUser);
+        } else {
+            subUsers = new HashSet<>();
+            subUsers.add(appUser);
         }
-        // password
-        if (StringUtils.isNotEmpty(userDTO.getPassword())) {
-            appUser.setPassword(this.passwordEncoder.encode(userDTO.getPassword()));
-        }
-        // role from db
-        Optional<Authority> authority = this.authorityRepository.findByRole(userDTO.getRole());
-        if (authority.isPresent()) {
-            List<Authority> authorities = new ArrayList<>();
-            authorities.add(authority.get());
-            appUser.setAuthorities(authorities);
-        }
-        appUser.setUserType(userDTO.getUserType());
-        appUser.setStatus(Status.Pending);
-        // save user to db
-        this.appUserRepository.save(appUser);
-        this.appUserRepository.flush();
-        // save the notification detail
-        NotificationClient notificationClient = new NotificationClient();
-        // client path
-        if(StringUtils.isNotEmpty(userDTO.getClientPath())) {
-            notificationClient.setClientPath(userDTO.getClientPath());
-        }
-        // topic id
-        if(StringUtils.isNotEmpty(userDTO.getTopicId())) {
-            notificationClient.setTopicId(userDTO.getTopicId());
-        }
-        notificationClient.setCreatedBy(appUser.getId());
-        notificationClient.setModifiedBy(appUser.getModifiedBy());
-        notificationClient.setAppUser(appUser);
-        notificationClient.setStatus(Status.Pending);
-        // save notification client
-        this.notificationClientRepository.save(notificationClient);
-        this.notificationClientRepository.flush();
-        // user verification token
-        String token = ApplicationConstants.BARCO_STRING +
-                (long) Math.floor(Math.random() * 9_000_000_000L) + 1_000_000_000L;
-        UserVerification userVerification = new UserVerification();
-        userVerification.setCreatedBy(appUser.getId());
-        userVerification.setModifiedBy(appUser.getModifiedBy());
-        userVerification.setAppUser(appUser);
-        userVerification.setToken(token);
-        userVerification.setConsumed(false);
-        userVerification.setStatus(Status.Pending);
-        // user Verification  save
-        this.userVerificationRepository.save(userVerification);
-        this.userVerificationRepository.flush();
+        adminUser.setSubUser(subUsers);
+        // save the detail of admin user
+        this.appUserRepository.save(adminUser);
         // user id set back for dto
         userDTO.setAppUserId(appUser.getId());
         userDTO.setToken(token);
@@ -181,13 +147,13 @@ public class AppUserServiceImpl implements AppUserService {
         return new ResponseDTO(ApiCode.SUCCESS, ApplicationConstants.ACCOUNT_SUCCESSFULLY_ACTIVATED);
     }
 
+    @Override
     public ResponseDTO forgetPassword(String email) {
         AppUser appUser = this.appUserRepository.findByUsernameAndStatusNot(email.toLowerCase().trim(), Status.Delete);
         if (ObjectUtils.isEmpty(appUser)) {
             return new ResponseDTO(ApiCode.ERROR, ApplicationConstants.USER_ID_NOT_EXIST);
         }
-        String token = ApplicationConstants.BARCO_STRING +
-                (long) Math.floor(Math.random() * 9_000_000_000L) + 1_000_000_000L;
+        String token = ApplicationConstants.BARCO_STRING + (long) Math.floor(Math.random() * 9_000_000_000L) + 1_000_000_000L;
         UserVerification userVerification = new UserVerification();
         userVerification.setAppUser(appUser);
         userVerification.setExpiryDate(TimeUtil.addHoursInTimeStamp(new Timestamp(System.currentTimeMillis()), 24));
@@ -195,7 +161,6 @@ public class AppUserServiceImpl implements AppUserService {
         userVerification.setStatus(Status.Pending);
         userVerification.setConsumed(false);
         userVerification.setToken(token);
-
         this.userVerificationRepository.save(userVerification);
         this.userVerificationRepository.flush();
         this.forgetPassword(appUser, token);
@@ -242,6 +207,99 @@ public class AppUserServiceImpl implements AppUserService {
         return new ResponseDTO(ApiCode.SUCCESS, ApplicationConstants.PASSWORD_RESET_SUCCESS);
     }
 
+    private AppUser saveUserDetail(UserDTO userDTO) throws Exception {
+        // save detail into db
+        AppUser appUser = new AppUser();
+        // first name
+        if (StringUtils.isNotEmpty(userDTO.getFirstName())) {
+            appUser.setFirstName(userDTO.getFirstName());
+        }
+        // last name
+        if (StringUtils.isNotEmpty(userDTO.getLastName())) {
+            appUser.setLastName(userDTO.getLastName());
+        }
+        // user name
+        if (StringUtils.isNotBlank(userDTO.getUsername())) {
+            appUser.setUsername(userDTO.getUsername());
+        }
+        // password
+        if (StringUtils.isNotEmpty(userDTO.getPassword())) {
+            appUser.setPassword(this.passwordEncoder.encode(userDTO.getPassword()));
+        }
+        // role from db
+        Optional<Authority> authority = this.authorityRepository.findByRole(userDTO.getRole());
+        if (authority.isPresent()) {
+            List<Authority> authorities = new ArrayList<>();
+            authorities.add(authority.get());
+            appUser.setAuthorities(authorities);
+        }
+        appUser.setUserType(userDTO.getUserType());
+        appUser.setStatus(Status.Pending);
+        // if appUserId there its mean its (Admin | Super-Admin)
+        if(userDTO.getAppUserId() != null) {
+            // modify not added bz its update by the real user not by the create user
+            appUser.setCreatedBy(userDTO.getAppUserId());
+        }
+        // save user to db
+        this.appUserRepository.save(appUser);
+        this.appUserRepository.flush();
+        return appUser;
+    }
+
+    private void saveNotificationClientDetail(UserDTO userDTO, AppUser appUser) throws Exception {
+        // save the notification detail
+        NotificationClient notificationClient = new NotificationClient();
+        // client path
+        if(StringUtils.isNotEmpty(userDTO.getClientPath())) {
+            notificationClient.setClientPath(userDTO.getClientPath());
+        }
+        // topic id
+        if(StringUtils.isNotEmpty(userDTO.getTopicId())) {
+            notificationClient.setTopicId(userDTO.getTopicId());
+        }
+        notificationClient.setCreatedBy(appUser.getId());
+        notificationClient.setModifiedBy(appUser.getModifiedBy());
+        notificationClient.setAppUser(appUser);
+        notificationClient.setStatus(Status.Pending);
+        // save notification client
+        this.notificationClientRepository.save(notificationClient);
+        this.notificationClientRepository.flush();
+    }
+
+    private void saveUserVerification(AppUser appUser, String token) throws Exception {
+        // user verification token
+        UserVerification userVerification = new UserVerification();
+        userVerification.setCreatedBy(appUser.getId());
+        userVerification.setModifiedBy(appUser.getModifiedBy());
+        userVerification.setAppUser(appUser);
+        userVerification.setToken(token);
+        userVerification.setConsumed(false);
+        userVerification.setStatus(Status.Pending);
+        // user Verification  save
+        this.userVerificationRepository.save(userVerification);
+        this.userVerificationRepository.flush();
+    }
+
+    private ResponseDTO validation(UserDTO userDTO) throws Exception {
+        if (StringUtils.isEmpty(userDTO.getFirstName()) || StringUtils.isEmpty(userDTO.getLastName())) {
+            return new ResponseDTO(ApiCode.INVALID_REQUEST, ApplicationConstants.FIRST_NAME_AND_LAST_NAME_REQUIRED);
+        } else if (StringUtils.isEmpty(userDTO.getUsername()) || !BarcoUtil.isValidEmail(userDTO.getUsername())) {
+            return new ResponseDTO(ApiCode.INVALID_REQUEST, ApplicationConstants.INVALID_EMAIL);
+        } else if (StringUtils.isEmpty(userDTO.getPassword())) {
+            return new ResponseDTO(ApiCode.INVALID_REQUEST, ApplicationConstants.PASSWORD_SHOULD_NOT_BE_EMPTY);
+        } else if (StringUtils.isEmpty(userDTO.getRole()) || !this.authorityRepository.findByRole(userDTO.getRole()).isPresent()) {
+            return new ResponseDTO(ApiCode.INVALID_REQUEST, ApplicationConstants.INVALID_ROLE);
+        } else if (StringUtils.isEmpty(userDTO.getTopicId()) || this.notificationClientRepository
+                .findByTopicId(userDTO.getTopicId()).isPresent()) {
+            return new ResponseDTO(ApiCode.INVALID_REQUEST, ApplicationConstants.TOPIC_ID_EXIST);
+        } else if (StringUtils.isEmpty(userDTO.getClientPath()) || this.notificationClientRepository
+                .findByClientPath(userDTO.getClientPath()).isPresent()) {
+            return new ResponseDTO(ApiCode.INVALID_REQUEST, ApplicationConstants.CLIENT_PATH_EXIST);
+        } else if (this.appUserRepository.findByUsername(userDTO.getUsername()).isPresent()) {
+            return new ResponseDTO(ApiCode.INVALID_REQUEST, ApplicationConstants.EMAIL_ALREADY_EXIST);
+        }
+        return null;
+    }
 
     private void saveUserRegistrationEmailDetail(UserDTO userDTO) {
         Map<String, Object> emailDetail = new HashMap<>();
@@ -257,6 +315,11 @@ public class AppUserServiceImpl implements AppUserService {
         emailDetail.put(FULLNAME, appUser.getFirstName() + " " + appUser.getLastName());
         emailDetail.put(TOKEN, token);
         this.emailMessagesFactory.forgetPassword(emailDetail);
+    }
+
+    private String getToken() {
+        return ApplicationConstants.BARCO_STRING +
+                (long) Math.floor(Math.random() * 9_000_000_000L) + 1_000_000_000L;
     }
 
 }

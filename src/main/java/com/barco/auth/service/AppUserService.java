@@ -5,7 +5,9 @@ import com.barco.model.dto.UserDTO;
 
 public interface AppUserService {
 
-    ResponseDTO saveUserRegistration(UserDTO userDTO);
+    ResponseDTO saveUserRegistration(UserDTO userDTO) throws Exception;
+
+    ResponseDTO saveUserRegistrationByAdmin(UserDTO userDTO) throws Exception;
 
     ResponseDTO emailTokenVerification(String token);
 

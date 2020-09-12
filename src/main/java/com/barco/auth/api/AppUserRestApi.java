@@ -45,7 +45,6 @@ public class AppUserRestApi {
         return response;
     }
 
-
     @ResponseStatus(HttpStatus.OK)
     @RequestMapping(value = "/signup-success", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiOperation(value = "Barco Cron account verification REST API.", notes = "Verify your account saved in Barco database.")
