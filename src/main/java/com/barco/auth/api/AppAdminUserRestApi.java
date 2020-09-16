@@ -33,7 +33,7 @@ public class AppAdminUserRestApi {
     ResponseDTO registrationByAdmin(@RequestBody UserDTO userDTO) {
         ResponseDTO response = null;
         try {
-            logger.info("Request for registrationByAdmin  " + userDTO);
+            logger.info("Request for registrationByAdmin " + userDTO);
             response = this.appUserService.saveUserRegistrationByAdmin(userDTO);
         } catch (Exception ex) {
             logger.info("Error during registrationByAdmin " + ExceptionUtil.getRootCause(ex));
