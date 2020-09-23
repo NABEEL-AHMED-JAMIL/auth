@@ -37,8 +37,7 @@ public class AppAdminUserRestApi {
             response = this.appUserService.saveUserRegistrationByAdmin(userDTO);
         } catch (Exception ex) {
             logger.info("Error during registrationByAdmin " + ExceptionUtil.getRootCause(ex));
-            response = new ResponseDTO (ApiCode.HTTP_500,
-                    ApplicationConstants.UNEXPECTED_ERROR + ex.getMessage(), userDTO);
+            response = new ResponseDTO (ApiCode.HTTP_500, ApplicationConstants.UNEXPECTED_ERROR);
         }
         return response;
     }

@@ -39,8 +39,7 @@ public class AuthorityRestApi {
             response = this.authorityService.createAuthority(authority);
         } catch (Exception ex) {
             logger.info("Error during createAuthority " + ExceptionUtil.getRootCause(ex));
-            response = new ResponseDTO (ApiCode.ERROR,
-                    ApplicationConstants.UNEXPECTED_ERROR + ex.getMessage(), ApiCode.HTTP_500);
+            response = new ResponseDTO (ApiCode.HTTP_500, ApplicationConstants.UNEXPECTED_ERROR);
         }
         return response;
     }
@@ -57,8 +56,7 @@ public class AuthorityRestApi {
             response = this.authorityService.getAllAuthority();
         } catch (Exception ex) {
             logger.info("Error during getAllAuthority " + ExceptionUtil.getRootCause(ex));
-            response = new ResponseDTO (ApiCode.ERROR,
-                    ApplicationConstants.UNEXPECTED_ERROR + ex.getMessage(), ApiCode.HTTP_500);
+            response = new ResponseDTO (ApiCode.HTTP_500, ApplicationConstants.UNEXPECTED_ERROR);
         }
         return response;
     }

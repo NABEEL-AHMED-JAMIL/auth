@@ -39,8 +39,7 @@ public class AppUserRestApi {
             response = this.appUserService.saveUserRegistration(userDTO);
         } catch (Exception ex) {
             logger.info("Error during registration " + ExceptionUtil.getRootCause(ex));
-            response = new ResponseDTO (ApiCode.HTTP_500,
-                    ApplicationConstants.UNEXPECTED_ERROR + ex.getMessage(), userDTO);
+            response = new ResponseDTO (ApiCode.HTTP_500, ApplicationConstants.UNEXPECTED_ERROR);
         }
         return response;
     }
@@ -58,8 +57,7 @@ public class AppUserRestApi {
             response = this.appUserService.emailTokenVerification(token);
         } catch (Exception ex) {
             logger.info("Error during signupSuccess " + ExceptionUtil.getRootCause(ex));
-            return new ResponseDTO(ApiCode.HTTP_500,
-                    ApplicationConstants.UNEXPECTED_ERROR + ex.getMessage(), token);
+            return new ResponseDTO(ApiCode.HTTP_500, ApplicationConstants.UNEXPECTED_ERROR);
         }
         return response;
     }
@@ -77,8 +75,7 @@ public class AppUserRestApi {
             response = this.appUserService.forgetPassword(email);
         } catch (Exception ex) {
             logger.info("Error during forgetPassword " + ExceptionUtil.getRootCause(ex));
-            return new ResponseDTO(ApiCode.HTTP_500,
-                    ApplicationConstants.INTERNAL_ERROR_MSG + ex.getMessage(), email);
+            return new ResponseDTO(ApiCode.HTTP_500, ApplicationConstants.UNEXPECTED_ERROR);
         }
         return response;
     }
@@ -101,8 +98,7 @@ public class AppUserRestApi {
             response = this.appUserService.resetPassword(userDTO);
         } catch (Exception ex) {
             logger.info("Error during resetPassword " + ExceptionUtil.getRootCause(ex));
-            return new ResponseDTO(ApiCode.HTTP_500,
-                    ApplicationConstants.INTERNAL_ERROR_MSG + ExceptionUtil.getRootCause(ex));
+            return new ResponseDTO(ApiCode.HTTP_500, ApplicationConstants.UNEXPECTED_ERROR);
         }
         return response;
     }
