@@ -56,18 +56,18 @@ public class AuthService implements AuthTokenService {
         if(this.barcoUtil.isValidEmail(jwtAuthenticationRequest.getUsername().trim())) {
             appUser = this.appUserRepository.findByUsernameAndStatusNot(jwtAuthenticationRequest.getUsername().trim(), Status.Delete);
             if(appUser == null) {
-                return new ResponseDTO(ApiCode.HTTP_404, ApplicationConstants.USER_NOT_FOUND,  null);
+                return new ResponseDTO(ApiCode.HTTP_404, ApplicationConstants.USER_NOT_FOUND);
             } else if (appUser.getStatus() != Status.Active) {
                 if (appUser.getStatus().equals(Status.Pending)) {
-                    return new ResponseDTO(ApiCode.PENDING, ApplicationConstants.PENDING_ACCOUNT_MSG, null);
+                    return new ResponseDTO(ApiCode.PENDING, ApplicationConstants.PENDING_ACCOUNT_MSG);
                 } else if (appUser.getStatus().equals(Status.Inactive)) {
-                    return new ResponseDTO(ApiCode.INACTIVE_USER, ApplicationConstants.INACTIVE_ACCOUNT, null);
+                    return new ResponseDTO(ApiCode.INACTIVE_USER, ApplicationConstants.INACTIVE_ACCOUNT);
                 } else {
-                    return new ResponseDTO(ApiCode.INACTIVE_USER, ApplicationConstants.INACTIVE_ACCOUNT, null);
+                    return new ResponseDTO(ApiCode.INACTIVE_USER, ApplicationConstants.INACTIVE_ACCOUNT);
                 }
             }
         } else {
-            return new ResponseDTO(ApiCode.INVALID_EMAIL_PATTREN, ApplicationConstants.INVALID_EMAIL, null);
+            return new ResponseDTO(ApiCode.INVALID_EMAIL_PATTREN, ApplicationConstants.INVALID_EMAIL);
         }
         if(appUser == null) {
             return new ResponseDTO(ApiCode.HTTP_404, ApplicationConstants.USER_NOT_FOUND,  null);

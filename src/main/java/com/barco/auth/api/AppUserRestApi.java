@@ -45,7 +45,7 @@ public class AppUserRestApi {
     }
 
     @ResponseStatus(HttpStatus.OK)
-    @RequestMapping(value = "/signup-success", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    @RequestMapping(value = "/signupSuccess", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiOperation(value = "Barco Cron account verification REST API.", notes = "Verify your account saved in Barco database.")
     public @ResponseBody ResponseDTO signupSuccess(@RequestParam String token) {
         ResponseDTO response = null;

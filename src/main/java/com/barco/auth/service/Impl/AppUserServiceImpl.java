@@ -45,19 +45,14 @@ public class AppUserServiceImpl implements AppUserService {
 
     @Autowired
     private AppUserRepository appUserRepository;
-
     @Autowired
     private AuthorityRepository authorityRepository;
-
     @Autowired
     private NotificationClientRepository notificationClientRepository;
-
     @Autowired
     private BCryptPasswordEncoder passwordEncoder;
-
     @Autowired
     private UserVerificationRepository userVerificationRepository;
-
     @Autowired
     private EmailMessagesFactory emailMessagesFactory;
 
@@ -87,9 +82,7 @@ public class AppUserServiceImpl implements AppUserService {
             return new ResponseDTO(ApiCode.INVALID_REQUEST, ApplicationConstants.ADMIN_USER_DETAIL_MISSING);
         }
         ResponseDTO saveUserValidation = this.validation(userDTO);
-        if (saveUserValidation != null) {
-            return saveUserValidation;
-        }
+        if (saveUserValidation != null) { return saveUserValidation; }
         // save app user detail
         AppUser appUser = saveUserDetail(userDTO);
         // notification-client-detail
@@ -153,7 +146,7 @@ public class AppUserServiceImpl implements AppUserService {
         if (ObjectUtils.isEmpty(appUser)) {
             return new ResponseDTO(ApiCode.ERROR, ApplicationConstants.USER_ID_NOT_EXIST);
         }
-        String token = ApplicationConstants.BARCO_STRING + (long) Math.floor(Math.random() * 9_000_000_000L) + 1_000_000_000L;
+        String token = this.getToken();
         UserVerification userVerification = new UserVerification();
         userVerification.setAppUser(appUser);
         userVerification.setExpiryDate(TimeUtil.addHoursInTimeStamp(new Timestamp(System.currentTimeMillis()), 24));
@@ -318,8 +311,7 @@ public class AppUserServiceImpl implements AppUserService {
     }
 
     private String getToken() {
-        return ApplicationConstants.BARCO_STRING +
-                (long) Math.floor(Math.random() * 9_000_000_000L) + 1_000_000_000L;
+        return ApplicationConstants.BARCO_STRING + (long) Math.floor(Math.random() * 9_000_000_000L) + 1_000_000_000L;
     }
 
 }

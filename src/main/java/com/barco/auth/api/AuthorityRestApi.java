@@ -13,6 +13,7 @@ import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 
@@ -29,6 +30,7 @@ public class AuthorityRestApi {
 
     // create authority
     @ResponseStatus(HttpStatus.OK)
+    @PreAuthorize("hasAuthority('ROLE_SUPER_ADIM') or hasAuthority('ROLE_ADMIN')")
     @RequestMapping(value = "/createAuthority", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiOperation(value = "Create Authority.", notes = "This method use to create the role for user.")
     public @ResponseBody ResponseDTO createAuthority(@RequestBody AuthorityDto authority) {

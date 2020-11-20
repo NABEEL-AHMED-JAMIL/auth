@@ -13,6 +13,7 @@ import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -27,6 +28,7 @@ public class AppAdminUserRestApi {
     private AppUserService appUserService;
 
     @ResponseStatus(HttpStatus.OK)
+    @PreAuthorize("hasAuthority('ROLE_SUPER_ADIM') or hasAuthority('ROLE_ADMIN')")
     @RequestMapping(value = "/registrationByAdmin", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiOperation(value = "User Registration By Admin.", notes = "You have to provide user Information to save in Barco DB.")
     public @ResponseBody
