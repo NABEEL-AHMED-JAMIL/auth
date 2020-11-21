@@ -7,6 +7,7 @@ import com.barco.common.filter.TokenAuthenticationFilter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -21,7 +22,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 
 /**
- * @author Nabeel.amd
+ * @author Nabeel Ahmed
  * detail of EnableGlobalMethodSecurity
  * securedEnabled: It enables the @Secured annotation using which you can protect your controller/service methods
  * @Secured("ROLE_ADMIN"), @Secured({"ROLE_USER", "ROLE_ADMIN"})
@@ -32,6 +33,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
  * @PreAuthorize("isAnonymous()"), @PreAuthorize("hasRole('USER')")
  */
 @Configuration
+@EnableCaching
 @EnableWebSecurity
 @EnableGlobalMethodSecurity(prePostEnabled = true, securedEnabled = true)
 public class WebSecurityConfig extends WebSecurityConfigurerAdapter {

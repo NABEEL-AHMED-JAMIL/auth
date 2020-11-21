@@ -1,14 +1,11 @@
 package com.barco.auth.service.Impl;
 
+import com.barco.model.dto.*;
 import com.barco.model.repository.AppUserRepository;
 import com.barco.auth.service.AuthTokenService;
 import com.barco.common.security.TokenHelper;
 import com.barco.common.utility.ApplicationConstants;
 import com.barco.common.utility.BarcoUtil;
-import com.barco.model.dto.JwtAuthenticationRequest;
-import com.barco.model.dto.LoginTokenDTO;
-import com.barco.model.dto.ResponseDTO;
-import com.barco.model.dto.UserDTO;
 import com.barco.model.enums.ApiCode;
 import com.barco.model.enums.Status;
 import com.barco.model.pojo.AppUser;
@@ -20,15 +17,19 @@ import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
 import java.sql.Timestamp;
+import java.util.HashSet;
 import java.util.Optional;
+import java.util.Set;
 
-
+/**
+ * @author Nabeel Ahmed
+ */
 @Service
 @Transactional
 @Scope("prototype")
-public class AuthService implements AuthTokenService {
+public class AuthServiceImpl implements AuthTokenService {
 
-    public Logger logger = LogManager.getLogger(AuthService.class);
+    public Logger logger = LogManager.getLogger(AuthServiceImpl.class);
 
     @Autowired
     private TokenHelper tokenHelper;
@@ -93,9 +94,18 @@ public class AuthService implements AuthTokenService {
             if(appUser.getLastName() != null) { userDTO.setLastName(appUser.getLastName()); }
             if(appUser.getUsername() != null) { userDTO.setUsername(appUser.getUsername()); }
             if(appUser.getUserType() != null) { userDTO.setUserType(appUser.getUserType()); }
-            appUser.getAuthorities().forEach(o -> {
-                userDTO.setRole(o.getAuthority());
-            });
+            appUser.getAuthorities().forEach(o -> { userDTO.setRole(o.getAuthority()); });
+            if (appUser.getAccessServices() != null && appUser.getAccessServices().size() > 0) {
+                Set<AccessServiceDto> accessServiceDtoSet = new HashSet<>();
+                appUser.getAccessServices().forEach(accessService -> {
+                    AccessServiceDto accessServiceDto = new AccessServiceDto();
+                    accessServiceDto.setId(accessService.getId());
+                    accessServiceDto.setServiceName(accessService.getServiceName());
+                    accessServiceDto.setInternalServiceName(accessService.getInternalServiceName());
+                    accessServiceDtoSet.add(accessServiceDto);
+                });
+                userDTO.setAccessServices(accessServiceDtoSet);
+            }
         }
         return userDTO;
     }

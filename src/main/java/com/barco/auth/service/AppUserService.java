@@ -3,6 +3,9 @@ package com.barco.auth.service;
 import com.barco.model.dto.ResponseDTO;
 import com.barco.model.dto.UserDTO;
 
+/**
+ * @author Nabeel Ahmed
+ */
 public interface AppUserService {
 
     ResponseDTO saveUserRegistration(UserDTO userDTO) throws Exception;
@@ -14,5 +17,7 @@ public interface AppUserService {
     ResponseDTO forgetPassword(String email);
 
     ResponseDTO resetPassword(UserDTO userDTO);
+
+    ResponseDTO fetchSuperAdminUserList(Long superAdminId);
 
 }

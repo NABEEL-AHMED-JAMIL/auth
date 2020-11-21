@@ -1,6 +1,9 @@
 package com.barco.auth.service.Impl;
 
 
+import com.barco.auth.repository.AccessServiceRepository;
+import com.barco.model.dto.SuperAdminUserListDto;
+import com.barco.model.pojo.*;
 import com.barco.model.repository.AppUserRepository;
 import com.barco.auth.repository.AuthorityRepository;
 import com.barco.auth.repository.UserVerificationRepository;
@@ -13,11 +16,9 @@ import com.barco.model.dto.ResponseDTO;
 import com.barco.model.dto.UserDTO;
 import com.barco.model.enums.ApiCode;
 import com.barco.model.enums.Status;
-import com.barco.model.pojo.AppUser;
-import com.barco.model.pojo.Authority;
-import com.barco.model.pojo.NotificationClient;
-import com.barco.model.pojo.UserVerification;
 import com.barco.model.repository.NotificationClientRepository;
+import com.barco.model.service.QueryServices;
+import com.barco.model.util.QueryUtil;
 import org.apache.commons.lang.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -30,8 +31,12 @@ import org.springframework.util.ObjectUtils;
 import javax.transaction.Transactional;
 import java.sql.Timestamp;
 import java.util.*;
+import java.util.stream.Collectors;
 
 
+/**
+ * @author Nabeel Ahmed
+ */
 @Service
 @Transactional
 @Scope("prototype")
@@ -48,6 +53,8 @@ public class AppUserServiceImpl implements AppUserService {
     @Autowired
     private AuthorityRepository authorityRepository;
     @Autowired
+    private AccessServiceRepository accessServiceRepository;
+    @Autowired
     private NotificationClientRepository notificationClientRepository;
     @Autowired
     private BCryptPasswordEncoder passwordEncoder;
@@ -55,14 +62,16 @@ public class AppUserServiceImpl implements AppUserService {
     private UserVerificationRepository userVerificationRepository;
     @Autowired
     private EmailMessagesFactory emailMessagesFactory;
+    @Autowired
+    private QueryUtil queryUtil;
+    @Autowired
+    private QueryServices queryServices;
 
 
     @Override
     public ResponseDTO saveUserRegistration(UserDTO userDTO) throws Exception {
         ResponseDTO saveUserValidation = this.validation(userDTO);
-        if (saveUserValidation != null) {
-            return saveUserValidation;
-        }
+        if (saveUserValidation != null) { return saveUserValidation; }
         // save app user detail
         AppUser appUser = saveUserDetail(userDTO);
         // notification-client-detail
@@ -109,16 +118,16 @@ public class AppUserServiceImpl implements AppUserService {
 
     @Override
     public ResponseDTO emailTokenVerification(String token) {
-        UserVerification userVerification = this.userVerificationRepository.findByToken(token);
+        UserVerification userVerification = this.userVerificationRepository.findByTokenAndStatus(token, Status.Active);
         if (ObjectUtils.isEmpty(userVerification)) {
             return new ResponseDTO(ApiCode.ERROR, ApplicationConstants.REQUEST_CANNOT_BE_PROCESSED);
         }
-        AppUser appUser = userVerification.getAppUser();
+        AppUser appUser = this.appUserRepository.findByIdAndStatusNot(userVerification.getCreatedBy(), Status.Delete);
         if (appUser.getStatus().value == Status.Active.value) {
             return new ResponseDTO(ApiCode.ERROR, ApplicationConstants.ACCOUNT_ALREADY_ACTIVATED);
         }
         // notification detail save
-        NotificationClient notificationClient = this.notificationClientRepository.findByAppUser(appUser);
+        NotificationClient notificationClient = this.notificationClientRepository.findByCreatedBy(appUser.getId());
         if (notificationClient != null) {
             notificationClient.setStatus(Status.Active);
             notificationClient.setModifiedBy(appUser.getId());
@@ -126,7 +135,7 @@ public class AppUserServiceImpl implements AppUserService {
             this.notificationClientRepository.saveAndFlush(notificationClient);
         }
         // verification detail activated time
-        userVerification.setStatus(Status.Active);
+        userVerification.setStatus(Status.Delete);
         userVerification.setModifiedBy(appUser.getId());
         userVerification.setModifiedAt(new Timestamp(System.currentTimeMillis()));
         userVerification.setActivatedAt(new Timestamp(System.currentTimeMillis()));
@@ -142,31 +151,30 @@ public class AppUserServiceImpl implements AppUserService {
 
     @Override
     public ResponseDTO forgetPassword(String email) {
-        AppUser appUser = this.appUserRepository.findByUsernameAndStatusNot(email.toLowerCase().trim(), Status.Delete);
-        if (ObjectUtils.isEmpty(appUser)) {
+        Optional<AppUser> appUser = this.appUserRepository.findByUsernameAndStatus(email.toLowerCase().trim(), Status.Active);
+        if (!appUser.isPresent()) {
             return new ResponseDTO(ApiCode.ERROR, ApplicationConstants.USER_ID_NOT_EXIST);
         }
         String token = this.getToken();
         UserVerification userVerification = new UserVerification();
-        userVerification.setAppUser(appUser);
         userVerification.setExpiryDate(TimeUtil.addHoursInTimeStamp(new Timestamp(System.currentTimeMillis()), 24));
-        userVerification.setCreatedBy(appUser.getId());
-        userVerification.setStatus(Status.Pending);
+        userVerification.setCreatedBy(appUser.get().getId());
+        userVerification.setStatus(Status.Active);
         userVerification.setConsumed(false);
         userVerification.setToken(token);
-        this.userVerificationRepository.save(userVerification);
-        this.userVerificationRepository.flush();
-        this.forgetPassword(appUser, token);
+        this.userVerificationRepository.saveAndFlush(userVerification);
+        this.forgetPasswordEmailDetail(appUser.get(), token);
         return new ResponseDTO(ApiCode.SUCCESS, ApplicationConstants.PASSWORD_RESET_EMAIL_MESSAGE);
     }
 
     @Override
     public ResponseDTO resetPassword(UserDTO userDTO) {
-        UserVerification userVerification = this.userVerificationRepository.findByToken(userDTO.getToken());
+        UserVerification userVerification = this.userVerificationRepository.findByTokenAndStatus(userDTO.getToken(), Status.Active);
         if (ObjectUtils.isEmpty(userVerification)) {
-            return new ResponseDTO(ApiCode.ERROR, ApplicationConstants.INVALID_REQUEST);
+            return new ResponseDTO(ApiCode.ERROR, ApplicationConstants.REQUEST_CANNOT_BE_PROCESSED);
         } else {
-            if (userVerification.getAppUser() != null && userVerification.getAppUser().getStatus().equals(Status.Delete)) {
+            Optional<AppUser> appUser = this.appUserRepository.findByIdAndStatus(userVerification.getCreatedBy(), Status.Active);
+            if (!appUser.isPresent()) {
                 return new ResponseDTO(ApiCode.HTTP_404, ApplicationConstants.USER_ID_NOT_EXIST);
             }
             if (userVerification.getConsumed()) {
@@ -177,54 +185,63 @@ public class AppUserServiceImpl implements AppUserService {
             if (currentDate.getTime() > userVerification.getExpiryDate().getTime()) {
                 return new ResponseDTO(ApiCode.ERROR, ApplicationConstants.TOKEN_EXPIRE);
             }
+            if(StringUtils.isNotBlank(userDTO.getPassword())) {
+                appUser.get().setPassword(this.passwordEncoder.encode(userDTO.getPassword()));
+                appUser.get().setModifiedBy(appUser.get().getId());
+            }
+            userVerification.setStatus(Status.Delete);
+            userVerification.setModifiedBy(appUser.get().getId());
+            userVerification.setPasswordAdded(true);
+            userVerification.setModifiedAt(new Timestamp(System.currentTimeMillis()));
+            userVerification.setActivatedAt(new Timestamp(System.currentTimeMillis()));
+            userVerification.setConsumed(true);
+            // app user repo
+            this.appUserRepository.saveAndFlush(appUser.get());
+            // user verfication repo
+            this.userVerificationRepository.saveAndFlush(userVerification);
+            return new ResponseDTO(ApiCode.SUCCESS, ApplicationConstants.PASSWORD_RESET_SUCCESS);
+
         }
-        AppUser appUser = userVerification.getAppUser();
-        if (ObjectUtils.isEmpty(appUser)) {
-            return new ResponseDTO(ApiCode.ERROR, ApplicationConstants.INVALID_REQUEST);
-        }
-        if(StringUtils.isNotBlank(userDTO.getPassword())) {
-            appUser.setPassword(this.passwordEncoder.encode(userDTO.getPassword()));
-        }
-        userVerification.setStatus(Status.Active);
-        userVerification.setModifiedBy(appUser.getId());
-        userVerification.setPasswordAdded(true);
-        userVerification.setModifiedAt(new Timestamp(System.currentTimeMillis()));
-        userVerification.setActivatedAt(new Timestamp(System.currentTimeMillis()));
-        userVerification.setConsumed(true);
-        // app user repo
-        this.appUserRepository.save(appUser);
-        this.appUserRepository.flush();
-        // user verfication repo
-        this.userVerificationRepository.save(userVerification);
-        this.userVerificationRepository.flush();
-        return new ResponseDTO(ApiCode.SUCCESS, ApplicationConstants.PASSWORD_RESET_SUCCESS);
     }
 
-    private AppUser saveUserDetail(UserDTO userDTO) throws Exception {
+    @Override
+    public ResponseDTO fetchSuperAdminUserList(Long superAdminId) {
+        List<Object[]> queryResponse = this.queryServices.executeQuery(
+                String.format(this.queryUtil.fetchSuperAdminUserListQuery(), superAdminId));
+        if (queryResponse != null && queryResponse.size() > 0) {
+            List<SuperAdminUserListDto> superAdminUserListDtos = new ArrayList<>();
+            for (Object[] object: queryResponse) {
+                SuperAdminUserListDto adminUserList = new SuperAdminUserListDto();
+                if (object[0] != null) { adminUserList.setId(Long.valueOf(object[0].toString())); }
+                if (object[1] != null) { adminUserList.setUsername(object[1].toString()); }
+                superAdminUserListDtos.add(adminUserList);
+            }
+            return new ResponseDTO(ApiCode.SUCCESS, ApplicationConstants.SUCCESS_MSG, superAdminUserListDtos);
+        }
+        return new ResponseDTO(ApiCode.INVALID_REQUEST, ApplicationConstants.HTTP_404_MSG);
+    }
+
+    private AppUser saveUserDetail(UserDTO userDTO) {
         // save detail into db
         AppUser appUser = new AppUser();
         // first name
-        if (StringUtils.isNotEmpty(userDTO.getFirstName())) {
-            appUser.setFirstName(userDTO.getFirstName());
-        }
+        if (StringUtils.isNotEmpty(userDTO.getFirstName())) { appUser.setFirstName(userDTO.getFirstName()); }
         // last name
-        if (StringUtils.isNotEmpty(userDTO.getLastName())) {
-            appUser.setLastName(userDTO.getLastName());
-        }
+        if (StringUtils.isNotEmpty(userDTO.getLastName())) { appUser.setLastName(userDTO.getLastName()); }
         // user name
-        if (StringUtils.isNotBlank(userDTO.getUsername())) {
-            appUser.setUsername(userDTO.getUsername());
-        }
+        if (StringUtils.isNotBlank(userDTO.getUsername())) { appUser.setUsername(userDTO.getUsername()); }
         // password
-        if (StringUtils.isNotEmpty(userDTO.getPassword())) {
-            appUser.setPassword(this.passwordEncoder.encode(userDTO.getPassword()));
-        }
+        if (StringUtils.isNotEmpty(userDTO.getPassword())) { appUser.setPassword(this.passwordEncoder.encode(userDTO.getPassword())); }
         // role from db
         Optional<Authority> authority = this.authorityRepository.findByRole(userDTO.getRole());
         if (authority.isPresent()) {
             List<Authority> authorities = new ArrayList<>();
             authorities.add(authority.get());
             appUser.setAuthorities(authorities);
+        }
+        if (userDTO.getAccessServices() != null && userDTO.getAccessServices().size() > 0) {
+            appUser.setAccessServices(this.accessServiceRepository.findAllByIdInAndStatus(userDTO.getAccessServices()
+                .stream().map(accessServiceDto -> { return accessServiceDto.getId(); }).collect(Collectors.toList()), Status.Active));
         }
         appUser.setUserType(userDTO.getUserType());
         appUser.setStatus(Status.Pending);
@@ -234,43 +251,32 @@ public class AppUserServiceImpl implements AppUserService {
             appUser.setCreatedBy(userDTO.getAppUserId());
         }
         // save user to db
-        this.appUserRepository.save(appUser);
-        this.appUserRepository.flush();
+        this.appUserRepository.saveAndFlush(appUser);
         return appUser;
     }
 
-    private void saveNotificationClientDetail(UserDTO userDTO, AppUser appUser) throws Exception {
+    private void saveNotificationClientDetail(UserDTO userDTO, AppUser appUser) {
         // save the notification detail
         NotificationClient notificationClient = new NotificationClient();
         // client path
-        if(StringUtils.isNotEmpty(userDTO.getClientPath())) {
-            notificationClient.setClientPath(userDTO.getClientPath());
-        }
+        if(StringUtils.isNotEmpty(userDTO.getClientPath())) { notificationClient.setClientPath(userDTO.getClientPath()); }
         // topic id
-        if(StringUtils.isNotEmpty(userDTO.getTopicId())) {
-            notificationClient.setTopicId(userDTO.getTopicId());
-        }
+        if(StringUtils.isNotEmpty(userDTO.getTopicId())) { notificationClient.setTopicId(userDTO.getTopicId()); }
         notificationClient.setCreatedBy(appUser.getId());
-        notificationClient.setModifiedBy(appUser.getModifiedBy());
-        notificationClient.setAppUser(appUser);
         notificationClient.setStatus(Status.Pending);
         // save notification client
-        this.notificationClientRepository.save(notificationClient);
-        this.notificationClientRepository.flush();
+        this.notificationClientRepository.saveAndFlush(notificationClient);
     }
 
-    private void saveUserVerification(AppUser appUser, String token) throws Exception {
+    private void saveUserVerification(AppUser appUser, String token) {
         // user verification token
         UserVerification userVerification = new UserVerification();
         userVerification.setCreatedBy(appUser.getId());
-        userVerification.setModifiedBy(appUser.getModifiedBy());
-        userVerification.setAppUser(appUser);
         userVerification.setToken(token);
         userVerification.setConsumed(false);
-        userVerification.setStatus(Status.Pending);
+        userVerification.setStatus(Status.Active);
         // user Verification  save
-        this.userVerificationRepository.save(userVerification);
-        this.userVerificationRepository.flush();
+        this.userVerificationRepository.saveAndFlush(userVerification);
     }
 
     private ResponseDTO validation(UserDTO userDTO) throws Exception {
@@ -302,7 +308,7 @@ public class AppUserServiceImpl implements AppUserService {
         this.emailMessagesFactory.emailAccountCreated(emailDetail);
     }
 
-    private void forgetPassword(AppUser appUser, String token) {
+    private void forgetPasswordEmailDetail(AppUser appUser, String token) {
         Map<String, Object> emailDetail = new HashMap<>();
         emailDetail.put(EMAIL, appUser.getUsername());
         emailDetail.put(FULLNAME, appUser.getFirstName() + " " + appUser.getLastName());

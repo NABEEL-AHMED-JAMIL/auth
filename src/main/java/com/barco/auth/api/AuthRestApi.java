@@ -19,7 +19,9 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
-
+/**
+ * @author Nabeel Ahmed
+ */
 @RestController
 @CrossOrigin(origins = "*")
 @RequestMapping(value = "/auth.json", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -37,7 +39,7 @@ public class AuthRestApi {
     @ResponseStatus(HttpStatus.OK)
     @RequestMapping(value = "/login", method = RequestMethod.POST)
     @ApiOperation(value = "User login.", notes = "Signup detail.")
-    public @ResponseBody ResponseDTO login(@RequestBody JwtAuthenticationRequest authenticationReq) {
+    public ResponseDTO login(@RequestBody JwtAuthenticationRequest authenticationReq) {
         try {
             final Authentication authentication = this.authenticationManager
                 .authenticate(new UsernamePasswordAuthenticationToken(authenticationReq.getUsername()

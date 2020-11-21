@@ -16,7 +16,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
-
+/**
+ * @author Nabeel Ahmed
+ */
 @RestController
 @CrossOrigin(origins = "*")
 @RequestMapping(value = "/public.json", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -28,11 +30,11 @@ public class AppUserRestApi {
     @Autowired
     private AppUserService appUserService;
 
-
+    // registration q.a pass (11-21-2020)
     @ResponseStatus(HttpStatus.OK)
     @RequestMapping(value = "/registration", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiOperation(value = "User Registration.", notes = "You have to provide user Information to save in Barco DB.")
-    public @ResponseBody ResponseDTO registration(@RequestBody UserDTO userDTO) {
+    public ResponseDTO registration(@RequestBody UserDTO userDTO) {
         ResponseDTO response = null;
         try {
             logger.info("Request for registration " + userDTO);
@@ -44,10 +46,11 @@ public class AppUserRestApi {
         return response;
     }
 
+    // signupSuccess q.a pass (11-21-2020)
     @ResponseStatus(HttpStatus.OK)
     @RequestMapping(value = "/signupSuccess", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiOperation(value = "Barco Cron account verification REST API.", notes = "Verify your account saved in Barco database.")
-    public @ResponseBody ResponseDTO signupSuccess(@RequestParam String token) {
+    public ResponseDTO signupSuccess(@RequestParam String token) {
         ResponseDTO response = null;
         try {
             logger.info("Request for signupSuccess " + token);
@@ -62,10 +65,11 @@ public class AppUserRestApi {
         return response;
     }
 
+    // forgetPassword q.a pass (11-21-2020)
     @ResponseStatus(HttpStatus.OK)
     @RequestMapping(value = "/forgetPassword", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiOperation(value = "Forget Password REST API.", notes = "Forget password it will reset through your email.")
-    public @ResponseBody ResponseDTO forgetPassword(@RequestParam String email) {
+    public ResponseDTO forgetPassword(@RequestParam String email) {
         ResponseDTO response = null;
         try {
             logger.info("Request for forgetPassword " + email);
@@ -80,11 +84,11 @@ public class AppUserRestApi {
         return response;
     }
 
-
+    // resetPassword q.a pass (11-21-2020)
     @ResponseStatus(HttpStatus.OK)
     @RequestMapping(value = "/resetPassword", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiOperation(value = "Reset Password REST API.", notes = "Reset Password will be save in our Database")
-    public @ResponseBody ResponseDTO resetPassword(@RequestBody UserDTO userDTO) {
+    public ResponseDTO resetPassword(@RequestBody UserDTO userDTO) {
         ResponseDTO response = null;
         try {
             logger.info("Request for resetPassword " + userDTO);

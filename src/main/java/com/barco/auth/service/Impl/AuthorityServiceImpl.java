@@ -20,7 +20,9 @@ import javax.transaction.Transactional;
 import java.util.List;
 import java.util.stream.Collectors;
 
-
+/**
+ * @author Nabeel Ahmed
+ */
 @Service
 @Transactional
 @Scope("prototype")
@@ -45,8 +47,7 @@ public class AuthorityServiceImpl implements AuthorityService {
         authority.setStatus(Status.Active);
         authority.setCreatedBy(01L);
         // authority save process
-        this.authorityRepository.save(authority);
-        this.authorityRepository.flush();
+        this.authorityRepository.saveAndFlush(authority);
         authorityDto.setId(authority.getId());
         return new ResponseDTO(ApiCode.SUCCESS, ApplicationConstants.SUCCESS_MSG, authorityDto);
     }

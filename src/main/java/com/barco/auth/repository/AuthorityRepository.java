@@ -8,7 +8,9 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 import java.util.Optional;
 
-
+/**
+ * @author Nabeel Ahmed
+ */
 @Repository
 public interface AuthorityRepository extends JpaRepository<Authority, Long> {
 

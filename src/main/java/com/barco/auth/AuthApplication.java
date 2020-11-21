@@ -6,7 +6,9 @@ import org.springframework.context.annotation.ComponentScan;
 import javax.annotation.PostConstruct;
 import java.util.TimeZone;
 
-
+/**
+ * @author Nabeel Ahmed
+ */
 @SpringBootApplication
 @ComponentScan(basePackages = { "com.barco.*" })
 public class AuthApplication {

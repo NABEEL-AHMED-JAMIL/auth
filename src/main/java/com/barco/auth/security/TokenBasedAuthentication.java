@@ -6,7 +6,9 @@ import com.google.gson.Gson;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.core.userdetails.UserDetails;
 
-
+/**
+ * @author Nabeel Ahmed
+ */
 @JsonIgnoreProperties(ignoreUnknown=true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class TokenBasedAuthentication extends AbstractAuthenticationToken {
