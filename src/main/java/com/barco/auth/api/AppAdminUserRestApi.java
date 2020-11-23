@@ -66,7 +66,6 @@ public class AppAdminUserRestApi {
         ResponseDTO response = null;
         try {
             logger.info("Request for createAccessService " + accessService);
-            // method use to create new authority
             response = this.accessServiceService.createAccessService(accessService);
         } catch (Exception ex) {
             logger.info("Error during createAccessService " + ExceptionUtil.getRootCause(ex));
@@ -75,6 +74,7 @@ public class AppAdminUserRestApi {
         return response;
     }
 
+    // registrationByAdmin q.a pass (11-23-2020)
     @ResponseStatus(HttpStatus.OK)
     @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN') or hasAuthority('ROLE_ADMIN')")
     @RequestMapping(value = "/registrationByAdmin", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
