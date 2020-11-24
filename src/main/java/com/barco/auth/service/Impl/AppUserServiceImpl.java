@@ -2,6 +2,7 @@ package com.barco.auth.service.Impl;
 
 
 import com.barco.auth.repository.AccessServiceRepository;
+import com.barco.model.dto.AccessServiceDto;
 import com.barco.model.dto.SuperAdminUserListDto;
 import com.barco.model.pojo.*;
 import com.barco.model.repository.AppUserRepository;
@@ -206,14 +207,27 @@ public class AppUserServiceImpl implements AppUserService {
 
     @Override
     public ResponseDTO fetchSuperAdminUserList(Long superAdminId) {
-        List<Object[]> queryResponse = this.queryServices.executeQuery(
-                String.format(this.queryUtil.fetchSuperAdminUserListQuery(), superAdminId));
-        if (queryResponse != null && queryResponse.size() > 0) {
+        List<Object[]> fetchSuperAdminUserListQueryResponse = this.queryServices.executeQuery(
+                String.format(this.queryUtil.fetchSuperAdminUserListQuery(), superAdminId, superAdminId));
+        if (fetchSuperAdminUserListQueryResponse != null && fetchSuperAdminUserListQueryResponse.size() > 0) {
             List<SuperAdminUserListDto> superAdminUserListDtos = new ArrayList<>();
-            for (Object[] object: queryResponse) {
+            for (Object[] object: fetchSuperAdminUserListQueryResponse) {
                 SuperAdminUserListDto adminUserList = new SuperAdminUserListDto();
                 if (object[0] != null) { adminUserList.setId(Long.valueOf(object[0].toString())); }
                 if (object[1] != null) { adminUserList.setUsername(object[1].toString()); }
+                if (object[2] != null) { adminUserList.setRole(object[2].toString());}
+                List<Object[]> fetchSuperAdminAccessServiceResponse = this.queryServices.executeQuery(
+                        String.format(this.queryUtil.fetchSuperAdminAccessService(), adminUserList.getId()));
+                if (fetchSuperAdminAccessServiceResponse != null && fetchSuperAdminAccessServiceResponse.size() > 0) {
+                    Set<AccessServiceDto> accessServices = new HashSet<>();
+                    for (Object[] object1: fetchSuperAdminAccessServiceResponse) {
+                        AccessServiceDto accessServiceDto = new AccessServiceDto();
+                        if (object1[0] != null) { accessServiceDto.setId(Long.valueOf(object1[0].toString())); }
+                        if (object1[1] != null) { accessServiceDto.setServiceName(object1[1].toString()); }
+                        accessServices.add(accessServiceDto);
+                    }
+                    adminUserList.setAccessServices(accessServices);
+                }
                 superAdminUserListDtos.add(adminUserList);
             }
             return new ResponseDTO(ApiCode.SUCCESS, ApplicationConstants.SUCCESS_MSG, superAdminUserListDtos);
@@ -296,6 +310,8 @@ public class AppUserServiceImpl implements AppUserService {
             return new ResponseDTO(ApiCode.INVALID_REQUEST, ApplicationConstants.CLIENT_PATH_EXIST);
         } else if (this.appUserRepository.findByUsername(userDTO.getUsername()).isPresent()) {
             return new ResponseDTO(ApiCode.INVALID_REQUEST, ApplicationConstants.EMAIL_ALREADY_EXIST);
+        } else if (userDTO.getAccessServices() == null) {
+            return new ResponseDTO(ApiCode.INVALID_REQUEST, ApplicationConstants.ACCESS_SERVICE_MISSING);
         }
         return null;
     }

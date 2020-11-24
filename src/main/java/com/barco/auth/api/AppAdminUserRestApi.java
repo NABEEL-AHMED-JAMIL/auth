@@ -93,7 +93,7 @@ public class AppAdminUserRestApi {
 
     // create auth process
     @ResponseStatus(HttpStatus.OK)
-    @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN')")
+    @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN') or hasAuthority('ROLE_ADMIN')")
     @RequestMapping(value = "/fetchSuperAdminUserList", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiOperation(value = "Fetch Super Admin User.", notes = "Fetch Super Admin User For List In Admin 's.")
     public ResponseDTO fetchSuperAdminUserList(@RequestParam(name = "superAdminId") Long superAdminId) {
