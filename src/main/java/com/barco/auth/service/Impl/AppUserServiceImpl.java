@@ -2,8 +2,7 @@ package com.barco.auth.service.Impl;
 
 
 import com.barco.auth.repository.AccessServiceRepository;
-import com.barco.model.dto.AccessServiceDto;
-import com.barco.model.dto.SuperAdminUserListDto;
+import com.barco.model.dto.*;
 import com.barco.model.pojo.*;
 import com.barco.model.repository.AppUserRepository;
 import com.barco.auth.repository.AuthorityRepository;
@@ -13,8 +12,6 @@ import com.barco.common.emailer.EmailMessagesFactory;
 import com.barco.common.utility.ApplicationConstants;
 import com.barco.common.utility.BarcoUtil;
 import com.barco.common.utility.TimeUtil;
-import com.barco.model.dto.ResponseDTO;
-import com.barco.model.dto.UserDTO;
 import com.barco.model.enums.ApiCode;
 import com.barco.model.enums.Status;
 import com.barco.model.repository.NotificationClientRepository;
@@ -67,7 +64,6 @@ public class AppUserServiceImpl implements AppUserService {
     private QueryUtil queryUtil;
     @Autowired
     private QueryServices queryServices;
-
 
     @Override
     public ResponseDTO saveUserRegistration(UserDTO userDTO) throws Exception {
@@ -336,4 +332,8 @@ public class AppUserServiceImpl implements AppUserService {
         return ApplicationConstants.BARCO_STRING + (long) Math.floor(Math.random() * 9_000_000_000L) + 1_000_000_000L;
     }
 
+    @Override
+    public ResponseDTO getAllUsers(PaggingDto pagging, Long loggedInUserId, SearchTextDto searchTextDto, Long userType, String startDate, String endDate) {
+        return null;
+    }
 }

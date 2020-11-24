@@ -5,11 +5,9 @@ import com.barco.auth.service.AppUserService;
 import com.barco.auth.service.AuthorityService;
 import com.barco.common.utility.ApplicationConstants;
 import com.barco.common.utility.ExceptionUtil;
-import com.barco.model.dto.AccessServiceDto;
-import com.barco.model.dto.AuthorityDto;
-import com.barco.model.dto.ResponseDTO;
-import com.barco.model.dto.UserDTO;
+import com.barco.model.dto.*;
 import com.barco.model.enums.ApiCode;
+import com.barco.model.util.PaggingUtil;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import org.apache.logging.log4j.LogManager;
@@ -107,5 +105,32 @@ public class AppAdminUserRestApi {
         }
         return response;
     }
+
+
+    @ResponseStatus(HttpStatus.OK)
+    @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN') or hasAuthority('ROLE_ADMIN')")
+    @RequestMapping(method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiOperation(value = "Get Users Api", notes = "Get list of all Users Linked to current user.")
+    public @ResponseBody ResponseDTO getAllUsers(@RequestParam(name = "loggedInUser") Long loggedInUserId,
+                                                 @RequestParam(value = "page", required = false) Long page,
+                                                 @RequestParam(value = "limit", required = false) Long limit,
+                                                 @RequestParam(value = "userType", required = false) Long userType,
+                                                 @RequestParam(value = "startDate", required = false) String startDate,
+                                                 @RequestParam(value = "endDate", required = false) String endDate,
+                                                 @RequestParam(value = "columnName", required = false) String columnName,
+                                                 @RequestParam(value = "order", required = false) String order,
+                                                 @RequestBody SearchTextDto searchTextDto) {
+        ResponseDTO response = null;
+        try {
+            logger.info("Request for get All User According to Admin Id. " + loggedInUserId);
+
+            response = this.appUserService.getAllUsers(PaggingUtil.ApplyPagging(page, limit, order, columnName), loggedInUserId,searchTextDto, userType, startDate, endDate);
+        } catch (Exception ex) {
+            logger.info("Error during getAllUsers Request:  " + ExceptionUtil.getRootCause(ex));
+            response = new ResponseDTO (ApiCode.HTTP_500, ApplicationConstants.UNEXPECTED_ERROR);
+        }
+        return response;
+    }
+
 
 }
