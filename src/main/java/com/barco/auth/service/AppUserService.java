@@ -23,6 +23,6 @@ public interface AppUserService {
 
     ResponseDTO fetchSuperAdminUserList(Long superAdminId);
 
-    ResponseDTO getAllUsers(PaggingDto pagging, Long loggedInUserId, SearchTextDto searchTextDto, Long userType, String startDate, String endDate);
+    ResponseDTO findAllAdminUsersInPagination(PaggingDto pagging, Long adminId, SearchTextDto searchTextDto, String startDate, String endDate);
 
 }

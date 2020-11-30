@@ -231,6 +231,11 @@ public class AppUserServiceImpl implements AppUserService {
         return new ResponseDTO(ApiCode.INVALID_REQUEST, ApplicationConstants.HTTP_404_MSG);
     }
 
+    @Override
+    public ResponseDTO findAllAdminUsersInPagination(PaggingDto pagging, Long adminId, SearchTextDto searchTextDto, String startDate, String endDate) {
+        return null;
+    }
+
     private AppUser saveUserDetail(UserDTO userDTO) {
         // save detail into db
         AppUser appUser = new AppUser();
@@ -332,8 +337,4 @@ public class AppUserServiceImpl implements AppUserService {
         return ApplicationConstants.BARCO_STRING + (long) Math.floor(Math.random() * 9_000_000_000L) + 1_000_000_000L;
     }
 
-    @Override
-    public ResponseDTO getAllUsers(PaggingDto pagging, Long loggedInUserId, SearchTextDto searchTextDto, Long userType, String startDate, String endDate) {
-        return null;
-    }
 }

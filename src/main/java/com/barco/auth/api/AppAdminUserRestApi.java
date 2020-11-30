@@ -107,30 +107,27 @@ public class AppAdminUserRestApi {
     }
 
 
+    // super admin login -> sub admin
+    // drop apna select ->super admin
     @ResponseStatus(HttpStatus.OK)
     @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN') or hasAuthority('ROLE_ADMIN')")
     @RequestMapping(method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiOperation(value = "Get Users Api", notes = "Get list of all Users Linked to current user.")
-    public @ResponseBody ResponseDTO getAllUsers(@RequestParam(name = "loggedInUser") Long loggedInUserId,
-                                                 @RequestParam(value = "page", required = false) Long page,
-                                                 @RequestParam(value = "limit", required = false) Long limit,
-                                                 @RequestParam(value = "userType", required = false) Long userType,
-                                                 @RequestParam(value = "startDate", required = false) String startDate,
-                                                 @RequestParam(value = "endDate", required = false) String endDate,
-                                                 @RequestParam(value = "columnName", required = false) String columnName,
-                                                 @RequestParam(value = "order", required = false) String order,
-                                                 @RequestBody SearchTextDto searchTextDto) {
+    public @ResponseBody ResponseDTO findAllAdminUsersInPagination(@RequestParam(value = "adminId", required = false) Long adminId,
+         @RequestParam(value = "page", required = false) Long page, @RequestParam(value = "limit", required = false) Long limit,
+         @RequestParam(value = "startDate", required = false) String startDate, @RequestParam(value = "endDate", required = false) String endDate,
+         @RequestParam(value = "columnName", required = false) String columnName, @RequestParam(value = "order", required = false) String order,
+         @RequestBody SearchTextDto searchTextDto) {
         ResponseDTO response = null;
         try {
-            logger.info("Request for get All User According to Admin Id. " + loggedInUserId);
-
-            response = this.appUserService.getAllUsers(PaggingUtil.ApplyPagging(page, limit, order, columnName), loggedInUserId,searchTextDto, userType, startDate, endDate);
+            logger.info("Request for get findAllAdminUsersInPagination " + adminId);
+            response = this.appUserService.findAllAdminUsersInPagination(PaggingUtil.ApplyPagging(page, limit, order, columnName),
+                    adminId ,searchTextDto, startDate, endDate);
         } catch (Exception ex) {
-            logger.info("Error during getAllUsers Request:  " + ExceptionUtil.getRootCause(ex));
+            logger.info("Error during findAllAdminUsersInPagination " + ExceptionUtil.getRootCause(ex));
             response = new ResponseDTO (ApiCode.HTTP_500, ApplicationConstants.UNEXPECTED_ERROR);
         }
         return response;
     }
-
 
 }
