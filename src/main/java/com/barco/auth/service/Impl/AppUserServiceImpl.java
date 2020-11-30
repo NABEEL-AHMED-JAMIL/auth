@@ -26,6 +26,8 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.ObjectUtils;
 
+import javax.persistence.EntityManager;
+import javax.persistence.Query;
 import javax.transaction.Transactional;
 import java.sql.Timestamp;
 import java.util.*;
@@ -64,6 +66,8 @@ public class AppUserServiceImpl implements AppUserService {
     private QueryUtil queryUtil;
     @Autowired
     private QueryServices queryServices;
+    @Autowired
+    private EntityManager _em;
 
     @Override
     public ResponseDTO saveUserRegistration(UserDTO userDTO) throws Exception {
@@ -231,8 +235,29 @@ public class AppUserServiceImpl implements AppUserService {
         return new ResponseDTO(ApiCode.INVALID_REQUEST, ApplicationConstants.HTTP_404_MSG);
     }
 
+
     @Override
-    public ResponseDTO findAllAdminUsersInPagination(PaggingDto pagging, Long adminId, SearchTextDto searchTextDto, String startDate, String endDate) {
+    public ResponseDTO findAllAdminUsersInPagination(PaggingDto pagging, Long loggedInUserId, SearchTextDto searchTextDto, String startDate, String endDate) {
+        /*fetch Total Count*/
+        Query countQuery = _em.createNativeQuery(QueryUtil.adminUsersList(true));
+        countQuery.setParameter(1, loggedInUserId);
+        List<Object[]> countValue=  countQuery.getResultList();
+        if(countValue != null && countValue.size() >0 ) {
+            /* fetch Record According to Paggination*/
+            Query query = _em.createNativeQuery(QueryUtil.adminUsersList(false));
+            query.setParameter(1, loggedInUserId);
+            if (pagging != null) {
+                int firstValue = pagging.getCurrentPage().intValue()-1 * pagging.getPageSize().intValue();
+                query.setFirstResult(firstValue);
+                query.setMaxResults(pagging.getPageSize().intValue());
+            }
+            List<Object[]> result = query.getResultList();
+            if(result != null && result.size() > 0) {
+                new ResponseDTO(ApiCode.SUCCESS, ApplicationConstants.SUCCESS_MSG, null, pagging);
+            }
+        } else {
+            new ResponseDTO(ApiCode.SUCCESS, ApplicationConstants.SUCCESS_MSG, null, pagging);
+        }
         return null;
     }
 
