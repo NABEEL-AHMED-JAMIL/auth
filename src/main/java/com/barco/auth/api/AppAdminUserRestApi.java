@@ -111,7 +111,7 @@ public class AppAdminUserRestApi {
     // drop apna select ->super admin
     @ResponseStatus(HttpStatus.OK)
     @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN') or hasAuthority('ROLE_ADMIN')")
-    @RequestMapping(method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    @RequestMapping(method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiOperation(value = "Get Users Api", notes = "Get list of all Users Linked to current user.")
     public @ResponseBody ResponseDTO findAllAdminUsersInPagination(@RequestParam(value = "adminId", required = false) Long adminId,
          @RequestParam(value = "page", required = false) Long page, @RequestParam(value = "limit", required = false) Long limit,
