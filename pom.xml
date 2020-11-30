@@ -26,6 +26,12 @@
 			<organization>Barco</organization>
 			<organizationUrl>https://github.com/NABEEL-AHMED-JAMIL</organizationUrl>
 		</developer>
+		<developer>
+			<name>Adeel Asghar</name>
+			<email>adeelasghar2011@gmail.com</email>
+			<organization>Barco</organization>
+			<organizationUrl>https://github.com/adeelasghar</organizationUrl>
+		</developer>
 	</developers>
 
 	<groupId>com.barco</groupId>
