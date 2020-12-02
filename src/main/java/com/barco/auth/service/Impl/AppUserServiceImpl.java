@@ -246,17 +246,24 @@ public class AppUserServiceImpl implements AppUserService {
             /* fetch Record According to Paggination*/
             Query query = _em.createNativeQuery(QueryUtil.adminUsersList(false));
             query.setParameter(1, loggedInUserId);
-            if (pagging != null) {
-                int firstValue = pagging.getCurrentPage().intValue()-1 * pagging.getPageSize().intValue();
-                query.setFirstResult(firstValue);
-                query.setMaxResults(pagging.getPageSize().intValue());
-            }
+            query.setParameter(2, pagging.getPageSize());
+            query.setParameter(3, pagging.getCurrentPage());
             List<Object[]> result = query.getResultList();
             if(result != null && result.size() > 0) {
-                new ResponseDTO(ApiCode.SUCCESS, ApplicationConstants.SUCCESS_MSG, null, pagging);
+                List<UserListingDto> userDtoLst = new ArrayList<>();
+                for(Object[] obj : result) {
+                    UserListingDto userObj = new UserListingDto();
+                    userObj.setId(new Long(obj[0].toString()));
+                    userObj.setFullName(obj[1].toString());
+                    userObj.setUsername(obj[2].toString());
+                    userDtoLst.add(userObj);
+                }
+                pagging.setTotalRecord(new Long(countValue.get(0)[0].toString()));
+                pagging.setCurrentPage(pagging.getCurrentPage()+1);
+                return new ResponseDTO(ApiCode.SUCCESS, ApplicationConstants.SUCCESS_MSG, userDtoLst, pagging);
             }
         } else {
-            new ResponseDTO(ApiCode.SUCCESS, ApplicationConstants.SUCCESS_MSG, null, pagging);
+            return new ResponseDTO(ApiCode.SUCCESS, ApplicationConstants.SUCCESS_MSG, null, pagging);
         }
         return null;
     }
