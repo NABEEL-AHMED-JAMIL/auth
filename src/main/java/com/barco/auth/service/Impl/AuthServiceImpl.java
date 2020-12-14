@@ -17,9 +17,7 @@ import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
 import java.sql.Timestamp;
-import java.util.HashSet;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 /**
  * @author Nabeel Ahmed
@@ -54,9 +52,9 @@ public class AuthServiceImpl implements AuthTokenService {
     @Override
     public ResponseDTO login(JwtAuthenticationRequest jwtAuthenticationRequest) {
         AppUser appUser = null;
-        if(this.barcoUtil.isValidEmail(jwtAuthenticationRequest.getUsername().trim())) {
+        if (this.barcoUtil.isValidEmail(jwtAuthenticationRequest.getUsername().trim())) {
             appUser = this.appUserRepository.findByUsernameAndStatusNot(jwtAuthenticationRequest.getUsername().trim(), Status.Delete);
-            if(appUser == null) {
+            if (appUser == null) {
                 return new ResponseDTO(ApiCode.HTTP_404, ApplicationConstants.USER_NOT_FOUND);
             } else if (appUser.getStatus() != Status.Active) {
                 if (appUser.getStatus().equals(Status.Pending)) {
@@ -70,15 +68,15 @@ public class AuthServiceImpl implements AuthTokenService {
         } else {
             return new ResponseDTO(ApiCode.INVALID_EMAIL_PATTREN, ApplicationConstants.INVALID_EMAIL);
         }
-        if(appUser == null) {
+        if (appUser == null) {
             return new ResponseDTO(ApiCode.HTTP_404, ApplicationConstants.USER_NOT_FOUND,  null);
         }
         LoginTokenDTO loginTokenDTO = new LoginTokenDTO(appUser.getId(), appUser.getUsername(),
                 appUser.getFirstName(), appUser.getLastName(), appUser.getUserType());
         String token = this.tokenHelper.generateToken(loginTokenDTO.toString());
-        if(token != null && !token.isEmpty()) {
+        if (token != null && !token.isEmpty()) {
             UserDTO userDTO = setUserResponse(appUser);
-            if(userDTO != null && userDTO.getAppUserId() != null) { userDTO.setToken(token); }
+            if (userDTO != null && userDTO.getAppUserId() != null) { userDTO.setToken(token); }
             appUser.setLastLoginAt(new Timestamp(System.currentTimeMillis()));
             return  new ResponseDTO(ApiCode.SUCCESS, ApplicationConstants.SUCCESS_MSG,  userDTO);
         } else {
@@ -88,13 +86,22 @@ public class AuthServiceImpl implements AuthTokenService {
 
     private UserDTO setUserResponse(AppUser appUser) {
         UserDTO userDTO = new UserDTO();
-        if(appUser != null) {
-            if(appUser.getId() != null) { userDTO.setAppUserId(appUser.getId()); }
-            if(appUser.getFirstName() != null) { userDTO.setFirstName(appUser.getFirstName()); }
-            if(appUser.getLastName() != null) { userDTO.setLastName(appUser.getLastName()); }
-            if(appUser.getUsername() != null) { userDTO.setUsername(appUser.getUsername()); }
-            if(appUser.getUserType() != null) { userDTO.setUserType(appUser.getUserType()); }
-            appUser.getAuthorities().forEach(o -> { userDTO.setRole(o.getAuthority()); });
+        if (appUser != null) {
+            if (appUser.getId() != null) { userDTO.setAppUserId(appUser.getId()); }
+            if (appUser.getFirstName() != null) { userDTO.setFirstName(appUser.getFirstName()); }
+            if (appUser.getLastName() != null) { userDTO.setLastName(appUser.getLastName()); }
+            if (appUser.getUsername() != null) { userDTO.setUsername(appUser.getUsername()); }
+            if (appUser.getUserType() != null) { userDTO.setUserType(appUser.getUserType()); }
+            if (appUser.getAuthorities() != null && appUser.getAuthorities().size() > 0) {
+                List<AuthorityDto> authorityDtos = new ArrayList<>();
+                appUser.getAuthorities().forEach(o -> {
+                    AuthorityDto authorityDto = new AuthorityDto();
+                    authorityDto.setRole(o.getAuthority());
+                    authorityDtos.add(authorityDto);
+                });
+                userDTO.setRoles(authorityDtos);
+            }
+
             if (appUser.getAccessServices() != null && appUser.getAccessServices().size() > 0) {
                 Set<AccessServiceDto> accessServiceDtoSet = new HashSet<>();
                 appUser.getAccessServices().forEach(accessService -> {

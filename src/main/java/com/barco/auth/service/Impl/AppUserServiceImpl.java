@@ -280,12 +280,14 @@ public class AppUserServiceImpl implements AppUserService {
         // password
         if (StringUtils.isNotEmpty(userDTO.getPassword())) { appUser.setPassword(this.passwordEncoder.encode(userDTO.getPassword())); }
         // role from db
-        Optional<Authority> authority = this.authorityRepository.findByRole(userDTO.getRole());
-        if (authority.isPresent()) {
-            List<Authority> authorities = new ArrayList<>();
-            authorities.add(authority.get());
-            appUser.setAuthorities(authorities);
-        }
+        List<Authority> authorities = new ArrayList<>();
+        userDTO.getRoles().stream().forEach(accessServiceDto -> {
+            Optional<Authority> authority = this.authorityRepository.findByRole(accessServiceDto.getRole());
+            if (authority.isPresent()) {
+                authorities.add(authority.get());
+            }
+        });
+        appUser.setAuthorities(authorities);
         if (userDTO.getAccessServices() != null && userDTO.getAccessServices().size() > 0) {
             appUser.setAccessServices(this.accessServiceRepository.findAllByIdInAndStatus(userDTO.getAccessServices()
                 .stream().map(accessServiceDto -> { return accessServiceDto.getId(); }).collect(Collectors.toList()), Status.Active));
@@ -333,7 +335,7 @@ public class AppUserServiceImpl implements AppUserService {
             return new ResponseDTO(ApiCode.INVALID_REQUEST, ApplicationConstants.INVALID_EMAIL);
         } else if (StringUtils.isEmpty(userDTO.getPassword())) {
             return new ResponseDTO(ApiCode.INVALID_REQUEST, ApplicationConstants.PASSWORD_SHOULD_NOT_BE_EMPTY);
-        } else if (StringUtils.isEmpty(userDTO.getRole()) || !this.authorityRepository.findByRole(userDTO.getRole()).isPresent()) {
+        } else if (userDTO.getRoles() == null || userDTO.getRoles().size() == 0) {
             return new ResponseDTO(ApiCode.INVALID_REQUEST, ApplicationConstants.INVALID_ROLE);
         } else if (StringUtils.isEmpty(userDTO.getTopicId()) || this.notificationClientRepository
                 .findByTopicId(userDTO.getTopicId()).isPresent()) {

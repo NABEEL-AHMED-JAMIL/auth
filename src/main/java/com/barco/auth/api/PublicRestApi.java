@@ -11,7 +11,6 @@ import io.swagger.annotations.ApiOperation;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
@@ -22,7 +21,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @CrossOrigin(origins = "*")
 @RequestMapping(value = "/public.json", produces = MediaType.APPLICATION_JSON_VALUE)
-@Api(tags = { "Barco-Cron-Authority := Barco-Cron-Authority EndPoint" })
+@Api(tags = { "Barco-Authority := Barco-Authority EndPoint" })
 public class PublicRestApi {
 
     public Logger logger = LogManager.getLogger(PublicRestApi.class);
@@ -34,9 +33,8 @@ public class PublicRestApi {
 
     // get all authority q.a pass (11-21-2020)
     @ResponseStatus(HttpStatus.OK)
-    @Cacheable("getAllAuthority")
     @RequestMapping(value = "/getAllAuthority", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiOperation(value = "Get All Authority.", notes = "Retrieve all authority")
+    @ApiOperation(value = "Get All Authority Rest Api.", notes = "Endpoint help to retrieve all authority")
     public ResponseDTO getAllAuthority() {
         ResponseDTO response = null;
         try {
@@ -52,9 +50,8 @@ public class PublicRestApi {
 
     // get all access service q.a pass (11-21-2020)
     @ResponseStatus(HttpStatus.OK)
-    @Cacheable("getAllAccessService")
     @RequestMapping(value = "/getAllAccessService", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiOperation(value = "Get All Authority.", notes = "Retrieve all access service")
+    @ApiOperation(value = "Get All Authority Rest Api.", notes = "Endpoint help retrieve all access service")
     public ResponseDTO getAllAccessService() {
         ResponseDTO response = null;
         try {

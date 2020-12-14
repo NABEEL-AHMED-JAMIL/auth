@@ -33,7 +33,7 @@ public class AppUserRestApi {
     // registration q.a pass (11-21-2020)
     @ResponseStatus(HttpStatus.OK)
     @RequestMapping(value = "/registration", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiOperation(value = "User Registration.", notes = "You have to provide user Information to save in Barco DB.")
+    @ApiOperation(value = "User Registration Rest Api.", notes = "Endpoint help to register the user.")
     public ResponseDTO registration(@RequestBody UserDTO userDTO) {
         ResponseDTO response = null;
         try {
@@ -49,7 +49,7 @@ public class AppUserRestApi {
     // signupSuccess q.a pass (11-21-2020)
     @ResponseStatus(HttpStatus.OK)
     @RequestMapping(value = "/signupSuccess", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiOperation(value = "Barco Cron account verification REST API.", notes = "Verify your account saved in Barco database.")
+    @ApiOperation(value = "Signup Success REST API.", notes = "Endpoint help to signup success process.")
     public ResponseDTO signupSuccess(@RequestParam String token) {
         ResponseDTO response = null;
         try {
@@ -68,7 +68,7 @@ public class AppUserRestApi {
     // forgetPassword q.a pass (11-21-2020)
     @ResponseStatus(HttpStatus.OK)
     @RequestMapping(value = "/forgetPassword", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiOperation(value = "Forget Password REST API.", notes = "Forget password it will reset through your email.")
+    @ApiOperation(value = "Forget Password REST API.", notes = "Endpoint help for forget password it will reset through your email.")
     public ResponseDTO forgetPassword(@RequestParam String email) {
         ResponseDTO response = null;
         try {
@@ -87,7 +87,7 @@ public class AppUserRestApi {
     // resetPassword q.a pass (11-21-2020)
     @ResponseStatus(HttpStatus.OK)
     @RequestMapping(value = "/resetPassword", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiOperation(value = "Reset Password REST API.", notes = "Reset Password will be save in our Database")
+    @ApiOperation(value = "Reset Password REST API.", notes = "Endpoint help for Reset Password.")
     public ResponseDTO resetPassword(@RequestBody UserDTO userDTO) {
         ResponseDTO response = null;
         try {

@@ -7,7 +7,7 @@ import com.barco.common.utility.ApplicationConstants;
 import com.barco.common.utility.ExceptionUtil;
 import com.barco.model.dto.*;
 import com.barco.model.enums.ApiCode;
-import com.barco.model.util.PaggingUtil;
+import com.barco.model.util.PagingUtil;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import org.apache.logging.log4j.LogManager;
@@ -111,7 +111,7 @@ public class AppAdminUserRestApi {
     // drop apna select ->super admin
     @ResponseStatus(HttpStatus.OK)
     @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN') or hasAuthority('ROLE_ADMIN')")
-    @RequestMapping(value = "/adminUserLisitng", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
+    @RequestMapping(value = "/adminUserListing", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiOperation(value = "Get Users Api", notes = "Get list of all Users Linked to current user.")
     public @ResponseBody ResponseDTO findAllAdminUsersInPagination(@RequestParam(value = "adminId", required = false) Long adminId,
          @RequestParam(value = "page", required = false) Long page, @RequestParam(value = "limit", required = false) Long limit,
@@ -121,7 +121,7 @@ public class AppAdminUserRestApi {
         ResponseDTO response = null;
         try {
             logger.info("Request for get findAllAdminUsersInPagination " + adminId);
-            response = this.appUserService.findAllAdminUsersInPagination(PaggingUtil.ApplyPagging(page, limit, order, columnName),
+            response = this.appUserService.findAllAdminUsersInPagination(PagingUtil.ApplyPaging(page, limit, order, columnName),
                     adminId ,searchTextDto, startDate, endDate);
         } catch (Exception ex) {
             logger.info("Error during findAllAdminUsersInPagination " + ExceptionUtil.getRootCause(ex));
