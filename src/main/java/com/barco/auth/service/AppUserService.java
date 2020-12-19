@@ -1,10 +1,9 @@
 package com.barco.auth.service;
 
-import com.barco.model.dto.PaggingDto;
+import com.barco.model.dto.PagingDto;
 import com.barco.model.dto.ResponseDTO;
 import com.barco.model.dto.SearchTextDto;
 import com.barco.model.dto.UserDTO;
-import com.barco.model.util.PaggingUtil;
 
 /**
  * @author Nabeel Ahmed
@@ -23,6 +22,6 @@ public interface AppUserService {
 
     ResponseDTO fetchSuperAdminUserList(Long superAdminId);
 
-    ResponseDTO findAllAdminUsersInPagination(PaggingDto pagging, Long adminId, SearchTextDto searchTextDto, String startDate, String endDate);
+    ResponseDTO findAllAdminUsersInPagination(PagingDto paging, Long adminId, SearchTextDto searchTextDto, String startDate, String endDate);
 
 }

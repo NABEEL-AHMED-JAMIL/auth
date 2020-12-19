@@ -106,9 +106,7 @@ public class AppAdminUserRestApi {
         return response;
     }
 
-
     // super admin login -> sub admin
-    // drop apna select ->super admin
     @ResponseStatus(HttpStatus.OK)
     @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN') or hasAuthority('ROLE_ADMIN')")
     @RequestMapping(value = "/adminUserListing", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
@@ -121,8 +119,8 @@ public class AppAdminUserRestApi {
         ResponseDTO response = null;
         try {
             logger.info("Request for get findAllAdminUsersInPagination " + adminId);
-            response = this.appUserService.findAllAdminUsersInPagination(PagingUtil.ApplyPaging(page, limit, order, columnName),
-                    adminId ,searchTextDto, startDate, endDate);
+//            response = this.appUserService.findAllAdminUsersInPagination(PagingUtil.ApplyPaging(page, limit, order, columnName),
+//                    adminId ,searchTextDto, startDate, endDate);
         } catch (Exception ex) {
             logger.info("Error during findAllAdminUsersInPagination " + ExceptionUtil.getRootCause(ex));
             response = new ResponseDTO (ApiCode.HTTP_500, ApplicationConstants.UNEXPECTED_ERROR);

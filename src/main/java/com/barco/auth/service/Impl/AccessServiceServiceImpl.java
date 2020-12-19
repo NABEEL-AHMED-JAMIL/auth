@@ -3,6 +3,7 @@ package com.barco.auth.service.Impl;
 import com.barco.auth.repository.AccessServiceRepository;
 import com.barco.auth.service.AccessServiceService;
 import com.barco.common.utility.ApplicationConstants;
+import com.barco.common.utility.BarcoUtil;
 import com.barco.model.dto.AccessServiceDto;
 import com.barco.model.dto.ResponseDTO;
 import com.barco.model.enums.ApiCode;
@@ -44,13 +45,19 @@ public class AccessServiceServiceImpl implements AccessServiceService {
 
     @Override
     public ResponseDTO getAllAccessService() {
-        List<AccessService> accessServices = this.accessServiceRepository.findAllByStatus(Status.Active);
-        List<AccessServiceDto> accessServiceList = accessServices.stream().map(accessService -> {
-            AccessServiceDto accessServiceDto = new AccessServiceDto();
-            if (accessService.getId() != null) { accessServiceDto.setId(accessService.getId()); }
-            if (accessService.getServiceName() != null) { accessServiceDto.setServiceName(accessService.getServiceName()); }
-            if (accessService.getInternalServiceName() != null) { accessServiceDto.setInternalServiceName(accessService.getInternalServiceName()); }
-            return accessServiceDto;
+        List<AccessServiceDto> accessServiceList = this.accessServiceRepository.findAllByStatus(Status.Active)
+            .stream().map(accessService -> {
+                AccessServiceDto accessServiceDto = new AccessServiceDto();
+                if (!BarcoUtil.isNull(accessService.getId())) {
+                    accessServiceDto.setId(accessService.getId());
+                }
+                if (!BarcoUtil.isNull(accessService.getServiceName())) {
+                    accessServiceDto.setServiceName(accessService.getServiceName());
+                }
+                if (!BarcoUtil.isNull(accessService.getInternalServiceName())) {
+                    accessServiceDto.setInternalServiceName(accessService.getInternalServiceName());
+                }
+                return accessServiceDto;
         }).collect(Collectors.toList());
         return new ResponseDTO(ApiCode.SUCCESS, ApplicationConstants.SUCCESS_MSG, accessServiceList);
     }

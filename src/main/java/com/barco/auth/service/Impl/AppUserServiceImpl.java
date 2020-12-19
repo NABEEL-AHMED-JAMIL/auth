@@ -72,7 +72,9 @@ public class AppUserServiceImpl implements AppUserService {
     @Override
     public ResponseDTO saveUserRegistration(UserDTO userDTO) throws Exception {
         ResponseDTO saveUserValidation = this.validation(userDTO);
-        if (saveUserValidation != null) { return saveUserValidation; }
+        if (saveUserValidation != null) {
+            return saveUserValidation;
+        }
         // save app user detail
         AppUser appUser = saveUserDetail(userDTO);
         // notification-client-detail
@@ -88,11 +90,13 @@ public class AppUserServiceImpl implements AppUserService {
 
     @Override
     public ResponseDTO saveUserRegistrationByAdmin(UserDTO userDTO) throws Exception {
-        if(userDTO != null && userDTO.getAppUserId() == null) {
+        if(userDTO != null && BarcoUtil.isNull(userDTO.getAppUserId())) {
             return new ResponseDTO(ApiCode.INVALID_REQUEST, ApplicationConstants.ADMIN_USER_DETAIL_MISSING);
         }
         ResponseDTO saveUserValidation = this.validation(userDTO);
-        if (saveUserValidation != null) { return saveUserValidation; }
+        if (saveUserValidation != null) {
+            return saveUserValidation;
+        }
         // save app user detail
         AppUser appUser = saveUserDetail(userDTO);
         // notification-client-detail
@@ -101,7 +105,7 @@ public class AppUserServiceImpl implements AppUserService {
         this.saveUserVerification(appUser, token);
         AppUser adminUser = this.appUserRepository.findById(userDTO.getAppUserId()).get();
         Set<AppUser> subUsers = adminUser.getSubUser();
-        if(subUsers != null) {
+        if (subUsers != null) {
             subUsers.add(appUser);
         } else {
             subUsers = new HashSet<>();
@@ -198,7 +202,7 @@ public class AppUserServiceImpl implements AppUserService {
             userVerification.setConsumed(true);
             // app user repo
             this.appUserRepository.saveAndFlush(appUser.get());
-            // user verfication repo
+            // user verification repo
             this.userVerificationRepository.saveAndFlush(userVerification);
             return new ResponseDTO(ApiCode.SUCCESS, ApplicationConstants.PASSWORD_RESET_SUCCESS);
 
@@ -213,17 +217,27 @@ public class AppUserServiceImpl implements AppUserService {
             List<SuperAdminUserListDto> superAdminUserListDtos = new ArrayList<>();
             for (Object[] object: fetchSuperAdminUserListQueryResponse) {
                 SuperAdminUserListDto adminUserList = new SuperAdminUserListDto();
-                if (object[0] != null) { adminUserList.setId(Long.valueOf(object[0].toString())); }
-                if (object[1] != null) { adminUserList.setUsername(object[1].toString()); }
-                if (object[2] != null) { adminUserList.setRole(object[2].toString());}
+                if (object[0] != null) {
+                    adminUserList.setId(Long.valueOf(object[0].toString()));
+                }
+                if (object[1] != null) {
+                    adminUserList.setUsername(object[1].toString());
+                }
+                if (object[2] != null) {
+                    adminUserList.setRole(object[2].toString());
+                }
                 List<Object[]> fetchSuperAdminAccessServiceResponse = this.queryServices.executeQuery(
                         String.format(this.queryUtil.fetchSuperAdminAccessService(), adminUserList.getId()));
                 if (fetchSuperAdminAccessServiceResponse != null && fetchSuperAdminAccessServiceResponse.size() > 0) {
                     Set<AccessServiceDto> accessServices = new HashSet<>();
                     for (Object[] object1: fetchSuperAdminAccessServiceResponse) {
                         AccessServiceDto accessServiceDto = new AccessServiceDto();
-                        if (object1[0] != null) { accessServiceDto.setId(Long.valueOf(object1[0].toString())); }
-                        if (object1[1] != null) { accessServiceDto.setServiceName(object1[1].toString()); }
+                        if (object1[0] != null) {
+                            accessServiceDto.setId(Long.valueOf(object1[0].toString()));
+                        }
+                        if (object1[1] != null) {
+                            accessServiceDto.setServiceName(object1[1].toString());
+                        }
                         accessServices.add(accessServiceDto);
                     }
                     adminUserList.setAccessServices(accessServices);
@@ -237,34 +251,36 @@ public class AppUserServiceImpl implements AppUserService {
 
 
     @Override
-    public ResponseDTO findAllAdminUsersInPagination(PaggingDto pagging, Long loggedInUserId, SearchTextDto searchTextDto, String startDate, String endDate) {
+    public ResponseDTO findAllAdminUsersInPagination(PagingDto paging, Long loggedInUserId, SearchTextDto searchTextDto,
+                                                     String startDate, String endDate) {
         /*fetch Total Count*/
-        Query countQuery = _em.createNativeQuery(QueryUtil.adminUsersList(true));
-        countQuery.setParameter(1, loggedInUserId);
-        List<Object[]> countValue=  countQuery.getResultList();
-        if(countValue != null && countValue.size() >0 ) {
-            /* fetch Record According to Paggination*/
-            Query query = _em.createNativeQuery(QueryUtil.adminUsersList(false));
-            query.setParameter(1, loggedInUserId);
-            query.setParameter(2, pagging.getPageSize());
-            query.setParameter(3, pagging.getCurrentPage());
-            List<Object[]> result = query.getResultList();
-            if(result != null && result.size() > 0) {
-                List<UserListingDto> userDtoLst = new ArrayList<>();
-                for(Object[] obj : result) {
-                    UserListingDto userObj = new UserListingDto();
-                    userObj.setId(new Long(obj[0].toString()));
-                    userObj.setFullName(obj[1].toString());
-                    userObj.setUsername(obj[2].toString());
-                    userDtoLst.add(userObj);
-                }
-                pagging.setTotalRecord(new Long(countValue.get(0)[0].toString()));
-                pagging.setCurrentPage(pagging.getCurrentPage()+1);
-                return new ResponseDTO(ApiCode.SUCCESS, ApplicationConstants.SUCCESS_MSG, userDtoLst, pagging);
-            }
-        } else {
-            return new ResponseDTO(ApiCode.SUCCESS, ApplicationConstants.SUCCESS_MSG, null, pagging);
-        }
+//        Query countQuery = _em.createNativeQuery(QueryUtil.adminUsersList(true));
+//        countQuery.setParameter(1, loggedInUserId);
+//        List<Object[]> countValue=  countQuery.getResultList();
+//        if (countValue != null && countValue.size() >0 ) {
+//            /* fetch Record According to Pagination*/
+//            Query query = _em.createNativeQuery(QueryUtil.adminUsersList(false));
+//            query.setParameter(1, loggedInUserId);
+//            query.setParameter(2, paging.getPageSize());
+//            query.setParameter(3, paging.getCurrentPage());
+//            List<Object[]> result = query.getResultList();
+//            if (result != null && result.size() > 0) {
+//                List<UserListingDto> userDtoLst = new ArrayList<>();
+//                for(Object[] obj : result) {
+//                    UserListingDto userObj = new UserListingDto();
+//                    userObj.setId(new Long(obj[0].toString()));
+//                    userObj.setFullName(obj[1].toString());
+//                    userObj.setUsername(obj[2].toString());
+//                    userDtoLst.add(userObj);
+//                }
+//                paging.setTotalRecord(new Long(countValue.get(0)[0].toString()));
+//                paging.setCurrentPage(paging.getCurrentPage()+1);
+//                return new ResponseDTO(ApiCode.SUCCESS, ApplicationConstants.SUCCESS_MSG, userDtoLst, paging);
+//            }
+//        } else {
+//            return new ResponseDTO(ApiCode.SUCCESS, ApplicationConstants.SUCCESS_MSG, null, paging);
+//        }
+//        return null;
         return null;
     }
 
@@ -272,13 +288,21 @@ public class AppUserServiceImpl implements AppUserService {
         // save detail into db
         AppUser appUser = new AppUser();
         // first name
-        if (StringUtils.isNotEmpty(userDTO.getFirstName())) { appUser.setFirstName(userDTO.getFirstName()); }
+        if (StringUtils.isNotEmpty(userDTO.getFirstName())) {
+            appUser.setFirstName(userDTO.getFirstName());
+        }
         // last name
-        if (StringUtils.isNotEmpty(userDTO.getLastName())) { appUser.setLastName(userDTO.getLastName()); }
+        if (StringUtils.isNotEmpty(userDTO.getLastName())) {
+            appUser.setLastName(userDTO.getLastName());
+        }
         // user name
-        if (StringUtils.isNotBlank(userDTO.getUsername())) { appUser.setUsername(userDTO.getUsername()); }
+        if (StringUtils.isNotBlank(userDTO.getUsername())) {
+            appUser.setUsername(userDTO.getUsername());
+        }
         // password
-        if (StringUtils.isNotEmpty(userDTO.getPassword())) { appUser.setPassword(this.passwordEncoder.encode(userDTO.getPassword())); }
+        if (StringUtils.isNotEmpty(userDTO.getPassword())) {
+            appUser.setPassword(this.passwordEncoder.encode(userDTO.getPassword()));
+        }
         // role from db
         List<Authority> authorities = new ArrayList<>();
         userDTO.getRoles().stream().forEach(accessServiceDto -> {
@@ -290,12 +314,14 @@ public class AppUserServiceImpl implements AppUserService {
         appUser.setAuthorities(authorities);
         if (userDTO.getAccessServices() != null && userDTO.getAccessServices().size() > 0) {
             appUser.setAccessServices(this.accessServiceRepository.findAllByIdInAndStatus(userDTO.getAccessServices()
-                .stream().map(accessServiceDto -> { return accessServiceDto.getId(); }).collect(Collectors.toList()), Status.Active));
+                .stream().map(accessServiceDto -> {
+                    return accessServiceDto.getId();
+                }).collect(Collectors.toList()), Status.Active));
         }
         appUser.setUserType(userDTO.getUserType());
         appUser.setStatus(Status.Pending);
         // if appUserId there its mean its (Admin | Super-Admin)
-        if(userDTO.getAppUserId() != null) {
+        if (userDTO.getAppUserId() != null) {
             // modify not added bz its update by the real user not by the create user
             appUser.setCreatedBy(userDTO.getAppUserId());
         }
@@ -308,9 +334,13 @@ public class AppUserServiceImpl implements AppUserService {
         // save the notification detail
         NotificationClient notificationClient = new NotificationClient();
         // client path
-        if(StringUtils.isNotEmpty(userDTO.getClientPath())) { notificationClient.setClientPath(userDTO.getClientPath()); }
+        if (StringUtils.isNotEmpty(userDTO.getClientPath())) {
+            notificationClient.setClientPath(userDTO.getClientPath());
+        }
         // topic id
-        if(StringUtils.isNotEmpty(userDTO.getTopicId())) { notificationClient.setTopicId(userDTO.getTopicId()); }
+        if (StringUtils.isNotEmpty(userDTO.getTopicId())) {
+            notificationClient.setTopicId(userDTO.getTopicId());
+        }
         notificationClient.setCreatedBy(appUser.getId());
         notificationClient.setStatus(Status.Pending);
         // save notification client
