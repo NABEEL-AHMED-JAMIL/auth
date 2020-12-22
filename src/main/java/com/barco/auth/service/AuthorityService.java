@@ -8,8 +8,8 @@ import com.barco.model.dto.ResponseDTO;
  */
 public interface AuthorityService {
 
-    ResponseDTO createAuthority(AuthorityDto authority);
+    ResponseDTO createAuthority(AuthorityDto authority) throws Exception;
 
-    ResponseDTO getAllAuthority();
+    ResponseDTO getAllAuthority() throws Exception;
 
 }

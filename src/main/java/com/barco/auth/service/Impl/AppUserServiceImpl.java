@@ -3,6 +3,8 @@ package com.barco.auth.service.Impl;
 
 import com.barco.auth.repository.AccessServiceRepository;
 import com.barco.model.dto.*;
+import com.barco.model.enums.KeyType;
+import com.barco.model.enums.UserType;
 import com.barco.model.pojo.*;
 import com.barco.model.repository.AppUserRepository;
 import com.barco.auth.repository.AuthorityRepository;
@@ -16,18 +18,17 @@ import com.barco.model.enums.ApiCode;
 import com.barco.model.enums.Status;
 import com.barco.model.repository.NotificationClientRepository;
 import com.barco.model.service.QueryServices;
+import com.barco.model.util.PagingUtil;
 import com.barco.model.util.QueryUtil;
 import org.apache.commons.lang.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.ObjectUtils;
-
-import javax.persistence.EntityManager;
-import javax.persistence.Query;
 import javax.transaction.Transactional;
 import java.sql.Timestamp;
 import java.util.*;
@@ -66,13 +67,12 @@ public class AppUserServiceImpl implements AppUserService {
     private QueryUtil queryUtil;
     @Autowired
     private QueryServices queryServices;
-    @Autowired
-    private EntityManager _em;
+
 
     @Override
     public ResponseDTO saveUserRegistration(UserDTO userDTO) throws Exception {
         ResponseDTO saveUserValidation = this.validation(userDTO);
-        if (saveUserValidation != null) {
+        if (!BarcoUtil.isNull(saveUserValidation)) {
             return saveUserValidation;
         }
         // save app user detail
@@ -90,11 +90,11 @@ public class AppUserServiceImpl implements AppUserService {
 
     @Override
     public ResponseDTO saveUserRegistrationByAdmin(UserDTO userDTO) throws Exception {
-        if(userDTO != null && BarcoUtil.isNull(userDTO.getAppUserId())) {
+        if(!BarcoUtil.isNull(userDTO) && BarcoUtil.isNull(userDTO.getAppUserId())) {
             return new ResponseDTO(ApiCode.INVALID_REQUEST, ApplicationConstants.ADMIN_USER_DETAIL_MISSING);
         }
         ResponseDTO saveUserValidation = this.validation(userDTO);
-        if (saveUserValidation != null) {
+        if (!BarcoUtil.isNull(saveUserValidation)) {
             return saveUserValidation;
         }
         // save app user detail
@@ -105,7 +105,7 @@ public class AppUserServiceImpl implements AppUserService {
         this.saveUserVerification(appUser, token);
         AppUser adminUser = this.appUserRepository.findById(userDTO.getAppUserId()).get();
         Set<AppUser> subUsers = adminUser.getSubUser();
-        if (subUsers != null) {
+        if (!BarcoUtil.isNull(subUsers)) {
             subUsers.add(appUser);
         } else {
             subUsers = new HashSet<>();
@@ -122,7 +122,7 @@ public class AppUserServiceImpl implements AppUserService {
     }
 
     @Override
-    public ResponseDTO emailTokenVerification(String token) {
+    public ResponseDTO emailTokenVerification(String token) throws Exception {
         UserVerification userVerification = this.userVerificationRepository.findByTokenAndStatus(token, Status.Active);
         if (ObjectUtils.isEmpty(userVerification)) {
             return new ResponseDTO(ApiCode.ERROR, ApplicationConstants.REQUEST_CANNOT_BE_PROCESSED);
@@ -133,7 +133,7 @@ public class AppUserServiceImpl implements AppUserService {
         }
         // notification detail save
         NotificationClient notificationClient = this.notificationClientRepository.findByCreatedBy(appUser.getId());
-        if (notificationClient != null) {
+        if (!BarcoUtil.isNull(notificationClient)) {
             notificationClient.setStatus(Status.Active);
             notificationClient.setModifiedBy(appUser.getId());
             notificationClient.setModifiedAt(new Timestamp(System.currentTimeMillis()));
@@ -155,7 +155,7 @@ public class AppUserServiceImpl implements AppUserService {
     }
 
     @Override
-    public ResponseDTO forgetPassword(String email) {
+    public ResponseDTO forgetPassword(String email) throws Exception {
         Optional<AppUser> appUser = this.appUserRepository.findByUsernameAndStatus(email.toLowerCase().trim(), Status.Active);
         if (!appUser.isPresent()) {
             return new ResponseDTO(ApiCode.ERROR, ApplicationConstants.USER_ID_NOT_EXIST);
@@ -173,7 +173,7 @@ public class AppUserServiceImpl implements AppUserService {
     }
 
     @Override
-    public ResponseDTO resetPassword(UserDTO userDTO) {
+    public ResponseDTO resetPassword(UserDTO userDTO) throws Exception {
         UserVerification userVerification = this.userVerificationRepository.findByTokenAndStatus(userDTO.getToken(), Status.Active);
         if (ObjectUtils.isEmpty(userVerification)) {
             return new ResponseDTO(ApiCode.ERROR, ApplicationConstants.REQUEST_CANNOT_BE_PROCESSED);
@@ -210,20 +210,20 @@ public class AppUserServiceImpl implements AppUserService {
     }
 
     @Override
-    public ResponseDTO fetchSuperAdminUserList(Long superAdminId) {
+    public ResponseDTO fetchSuperAdminUserList(Long superAdminId) throws Exception {
         List<Object[]> fetchSuperAdminUserListQueryResponse = this.queryServices.executeQuery(
-                String.format(this.queryUtil.fetchSuperAdminUserListQuery(), superAdminId, superAdminId));
+            this.queryUtil.fetchSuperAdminUserListQuery(superAdminId));
         if (fetchSuperAdminUserListQueryResponse != null && fetchSuperAdminUserListQueryResponse.size() > 0) {
             List<SuperAdminUserListDto> superAdminUserListDtos = new ArrayList<>();
             for (Object[] object: fetchSuperAdminUserListQueryResponse) {
                 SuperAdminUserListDto adminUserList = new SuperAdminUserListDto();
-                if (object[0] != null) {
+                if (!BarcoUtil.isNull(object[0])) {
                     adminUserList.setId(Long.valueOf(object[0].toString()));
                 }
-                if (object[1] != null) {
+                if (!BarcoUtil.isNull(object[1])) {
                     adminUserList.setUsername(object[1].toString());
                 }
-                if (object[2] != null) {
+                if (!BarcoUtil.isNull(object[2])) {
                     adminUserList.setRole(object[2].toString());
                 }
                 List<Object[]> fetchSuperAdminAccessServiceResponse = this.queryServices.executeQuery(
@@ -232,10 +232,10 @@ public class AppUserServiceImpl implements AppUserService {
                     Set<AccessServiceDto> accessServices = new HashSet<>();
                     for (Object[] object1: fetchSuperAdminAccessServiceResponse) {
                         AccessServiceDto accessServiceDto = new AccessServiceDto();
-                        if (object1[0] != null) {
+                        if (!BarcoUtil.isNull(object1[0])) {
                             accessServiceDto.setId(Long.valueOf(object1[0].toString()));
                         }
-                        if (object1[1] != null) {
+                        if (!BarcoUtil.isNull(object1[1])) {
                             accessServiceDto.setServiceName(object1[1].toString());
                         }
                         accessServices.add(accessServiceDto);
@@ -251,40 +251,55 @@ public class AppUserServiceImpl implements AppUserService {
 
 
     @Override
-    public ResponseDTO findAllAdminUsersInPagination(PagingDto paging, Long loggedInUserId, SearchTextDto searchTextDto,
-                                                     String startDate, String endDate) {
-        /*fetch Total Count*/
-//        Query countQuery = _em.createNativeQuery(QueryUtil.adminUsersList(true));
-//        countQuery.setParameter(1, loggedInUserId);
-//        List<Object[]> countValue=  countQuery.getResultList();
-//        if (countValue != null && countValue.size() >0 ) {
-//            /* fetch Record According to Pagination*/
-//            Query query = _em.createNativeQuery(QueryUtil.adminUsersList(false));
-//            query.setParameter(1, loggedInUserId);
-//            query.setParameter(2, paging.getPageSize());
-//            query.setParameter(3, paging.getCurrentPage());
-//            List<Object[]> result = query.getResultList();
-//            if (result != null && result.size() > 0) {
-//                List<UserListingDto> userDtoLst = new ArrayList<>();
-//                for(Object[] obj : result) {
-//                    UserListingDto userObj = new UserListingDto();
-//                    userObj.setId(new Long(obj[0].toString()));
-//                    userObj.setFullName(obj[1].toString());
-//                    userObj.setUsername(obj[2].toString());
-//                    userDtoLst.add(userObj);
-//                }
-//                paging.setTotalRecord(new Long(countValue.get(0)[0].toString()));
-//                paging.setCurrentPage(paging.getCurrentPage()+1);
-//                return new ResponseDTO(ApiCode.SUCCESS, ApplicationConstants.SUCCESS_MSG, userDtoLst, paging);
-//            }
-//        } else {
-//            return new ResponseDTO(ApiCode.SUCCESS, ApplicationConstants.SUCCESS_MSG, null, paging);
-//        }
-//        return null;
-        return null;
+    public ResponseDTO findAllAdminUsersInPagination(Pageable paging, Long adminId, SearchTextDto searchTextDto,
+         String startDate, String endDate, String order, String columnName) {
+        ResponseDTO responseDTO = null;
+        Object countQueryResult = this.queryServices.executeQueryForSingleResult(
+                this.queryUtil.adminUsersList(true, adminId, startDate, endDate, searchTextDto));
+        if (!BarcoUtil.isNull(countQueryResult)) {
+            /* fetch Record According to Pagination*/
+            List<Object[]> result = this.queryServices.executeQuery(
+                    this.queryUtil.adminUsersList(false, adminId, startDate, endDate, searchTextDto), paging);
+            if (!BarcoUtil.isNull(result) && result.size() > 0) {
+                List<UserListingDto> userListingDtos = new ArrayList<>();
+                for(Object[] obj : result) {
+                    UserListingDto userListingDto = new UserListingDto();
+                    if (!BarcoUtil.isNull(obj[0])) {
+                        userListingDto.setId(new Long(obj[0].toString()));
+                    }
+                    if (!BarcoUtil.isNull(obj[1])) {
+                        userListingDto.setCreatedAt(Timestamp.valueOf(obj[1].toString()));
+                    }
+                    if (!BarcoUtil.isNull(obj[2])) {
+                        userListingDto.setFullName(obj[2].toString());;
+                    }
+                    if (!BarcoUtil.isNull(obj[3])) {
+                        userListingDto.setUsername(obj[3].toString());
+                    }
+                    if (!BarcoUtil.isNull(obj[4])) {
+                        userListingDto.setLastLoginAt(Timestamp.valueOf(obj[4].toString()));
+                    }
+                    if (!BarcoUtil.isNull(obj[5])) {
+                        userListingDto.setRole(obj[5].toString());
+                    }
+                    if (!BarcoUtil.isNull(obj[6])) {
+                        userListingDto.setStatus(Status.getStatus(new Long(obj[6].toString())));
+                    }
+                    if (!BarcoUtil.isNull(obj[7])) {
+                        userListingDto.setUserType(UserType.getUserType(new Long(obj[7].toString())));
+                    }
+                    userListingDtos.add(userListingDto);
+                }
+                responseDTO = new ResponseDTO(ApiCode.SUCCESS, ApplicationConstants.SUCCESS_MSG, userListingDtos,
+                        PagingUtil.convertEntityToPagingDTO(Long.valueOf(countQueryResult.toString()), paging));
+            }
+        } else {
+            responseDTO = new ResponseDTO(ApiCode.SUCCESS, ApplicationConstants.SUCCESS_MSG, new ArrayList<>());
+        }
+        return responseDTO;
     }
 
-    private AppUser saveUserDetail(UserDTO userDTO) {
+    private AppUser saveUserDetail(UserDTO userDTO) throws Exception {
         // save detail into db
         AppUser appUser = new AppUser();
         // first name
@@ -312,7 +327,7 @@ public class AppUserServiceImpl implements AppUserService {
             }
         });
         appUser.setAuthorities(authorities);
-        if (userDTO.getAccessServices() != null && userDTO.getAccessServices().size() > 0) {
+        if (!BarcoUtil.isNull(userDTO.getAccessServices()) && userDTO.getAccessServices().size() > 0) {
             appUser.setAccessServices(this.accessServiceRepository.findAllByIdInAndStatus(userDTO.getAccessServices()
                 .stream().map(accessServiceDto -> {
                     return accessServiceDto.getId();
@@ -321,7 +336,7 @@ public class AppUserServiceImpl implements AppUserService {
         appUser.setUserType(userDTO.getUserType());
         appUser.setStatus(Status.Pending);
         // if appUserId there its mean its (Admin | Super-Admin)
-        if (userDTO.getAppUserId() != null) {
+        if (!BarcoUtil.isNull(userDTO.getAppUserId())) {
             // modify not added bz its update by the real user not by the create user
             appUser.setCreatedBy(userDTO.getAppUserId());
         }
@@ -330,7 +345,7 @@ public class AppUserServiceImpl implements AppUserService {
         return appUser;
     }
 
-    private void saveNotificationClientDetail(UserDTO userDTO, AppUser appUser) {
+    private void saveNotificationClientDetail(UserDTO userDTO, AppUser appUser) throws Exception {
         // save the notification detail
         NotificationClient notificationClient = new NotificationClient();
         // client path
@@ -347,7 +362,7 @@ public class AppUserServiceImpl implements AppUserService {
         this.notificationClientRepository.saveAndFlush(notificationClient);
     }
 
-    private void saveUserVerification(AppUser appUser, String token) {
+    private void saveUserVerification(AppUser appUser, String token) throws Exception {
         // user verification token
         UserVerification userVerification = new UserVerification();
         userVerification.setCreatedBy(appUser.getId());
@@ -365,7 +380,7 @@ public class AppUserServiceImpl implements AppUserService {
             return new ResponseDTO(ApiCode.INVALID_REQUEST, ApplicationConstants.INVALID_EMAIL);
         } else if (StringUtils.isEmpty(userDTO.getPassword())) {
             return new ResponseDTO(ApiCode.INVALID_REQUEST, ApplicationConstants.PASSWORD_SHOULD_NOT_BE_EMPTY);
-        } else if (userDTO.getRoles() == null || userDTO.getRoles().size() == 0) {
+        } else if (BarcoUtil.isNull(userDTO.getRoles()) || userDTO.getRoles().size() == 0) {
             return new ResponseDTO(ApiCode.INVALID_REQUEST, ApplicationConstants.INVALID_ROLE);
         } else if (StringUtils.isEmpty(userDTO.getTopicId()) || this.notificationClientRepository
                 .findByTopicId(userDTO.getTopicId()).isPresent()) {
@@ -375,13 +390,13 @@ public class AppUserServiceImpl implements AppUserService {
             return new ResponseDTO(ApiCode.INVALID_REQUEST, ApplicationConstants.CLIENT_PATH_EXIST);
         } else if (this.appUserRepository.findByUsername(userDTO.getUsername()).isPresent()) {
             return new ResponseDTO(ApiCode.INVALID_REQUEST, ApplicationConstants.EMAIL_ALREADY_EXIST);
-        } else if (userDTO.getAccessServices() == null) {
+        } else if (BarcoUtil.isNull(userDTO.getAccessServices())) {
             return new ResponseDTO(ApiCode.INVALID_REQUEST, ApplicationConstants.ACCESS_SERVICE_MISSING);
         }
         return null;
     }
 
-    private void saveUserRegistrationEmailDetail(UserDTO userDTO) {
+    private void saveUserRegistrationEmailDetail(UserDTO userDTO) throws Exception {
         Map<String, Object> emailDetail = new HashMap<>();
         emailDetail.put(EMAIL, userDTO.getUsername());
         emailDetail.put(FULLNAME, userDTO.getFirstName() + " " + userDTO.getLastName());
@@ -389,7 +404,7 @@ public class AppUserServiceImpl implements AppUserService {
         this.emailMessagesFactory.emailAccountCreated(emailDetail);
     }
 
-    private void forgetPasswordEmailDetail(AppUser appUser, String token) {
+    private void forgetPasswordEmailDetail(AppUser appUser, String token) throws Exception {
         Map<String, Object> emailDetail = new HashMap<>();
         emailDetail.put(EMAIL, appUser.getUsername());
         emailDetail.put(FULLNAME, appUser.getFirstName() + " " + appUser.getLastName());
@@ -398,7 +413,8 @@ public class AppUserServiceImpl implements AppUserService {
     }
 
     private String getToken() {
-        return ApplicationConstants.BARCO_STRING + (long) Math.floor(Math.random() * 9_000_000_000L) + 1_000_000_000L;
+        return ApplicationConstants.BARCO_STRING +
+                (long) Math.floor(Math.random() * 9_000_000_000L) + 1_000_000_000L;
     }
 
 }

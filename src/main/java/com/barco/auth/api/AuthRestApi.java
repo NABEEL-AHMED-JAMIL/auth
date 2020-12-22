@@ -38,7 +38,7 @@ public class AuthRestApi {
 
     @ResponseStatus(HttpStatus.OK)
     @RequestMapping(value = "/login", method = RequestMethod.POST)
-    @ApiOperation(value = "User login Rest Api.", notes = "Endpoint help to login user.")
+    @ApiOperation(value = "User login", notes = "Endpoint help to login user.")
     public ResponseDTO login(@RequestBody JwtAuthenticationRequest authenticationReq) {
         ResponseDTO response = null;
         try {
@@ -48,6 +48,7 @@ public class AuthRestApi {
             // Inject into security context
             SecurityContextHolder.getContext().setAuthentication(authentication);
             response = this.authService.login(authenticationReq);
+            logger.info("Request for login " + authenticationReq);
           } catch (Exception ex) {
             logger.info("Error during login " + ExceptionUtil.getRootCause(ex));
             response = new ResponseDTO(ApiCode.ERROR, ApplicationConstants.INVALID_CREDENTIAL_MSG);

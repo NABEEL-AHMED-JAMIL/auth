@@ -41,7 +41,7 @@ public class AppAdminUserRestApi {
     @ResponseStatus(HttpStatus.OK)
     @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN')")
     @RequestMapping(value = "/createAuthority", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiOperation(value = "Create Authority.", notes = "This method use to create the role for user.")
+    @ApiOperation(value = "Create Authority", notes = "Endpoint help create the role for user.")
     public ResponseDTO createAuthority(@RequestBody AuthorityDto authority) {
         ResponseDTO response = null;
         try {
@@ -59,7 +59,7 @@ public class AppAdminUserRestApi {
     @ResponseStatus(HttpStatus.OK)
     @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN')")
     @RequestMapping(value = "/createAccessService", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiOperation(value = "Create Access Service.", notes = "This method use to create the access service for user.")
+    @ApiOperation(value = "Create Access Service.", notes = "Endpoint help create the access service for user.")
     public ResponseDTO createAccessService(@RequestBody AccessServiceDto accessService) {
         ResponseDTO response = null;
         try {
@@ -76,7 +76,7 @@ public class AppAdminUserRestApi {
     @ResponseStatus(HttpStatus.OK)
     @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN') or hasAuthority('ROLE_ADMIN')")
     @RequestMapping(value = "/registrationByAdmin", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiOperation(value = "User Registration By Admin.", notes = "You have to provide user Information to save in Barco DB.")
+    @ApiOperation(value = "User Registration By Admin.", notes = "Endpoint help to create user in admin side.")
     public ResponseDTO registrationByAdmin(@RequestBody UserDTO userDTO) {
         ResponseDTO response = null;
         try {
@@ -93,7 +93,7 @@ public class AppAdminUserRestApi {
     @ResponseStatus(HttpStatus.OK)
     @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN') or hasAuthority('ROLE_ADMIN')")
     @RequestMapping(value = "/fetchSuperAdminUserList", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiOperation(value = "Fetch Super Admin User.", notes = "Fetch Super Admin User For List In Admin 's.")
+    @ApiOperation(value = "Fetch Super Admin User.", notes = "Endpoint help to fetch sub user of super admin and admin.")
     public ResponseDTO fetchSuperAdminUserList(@RequestParam(name = "superAdminId") Long superAdminId) {
         ResponseDTO response = null;
         try {
@@ -110,17 +110,17 @@ public class AppAdminUserRestApi {
     @ResponseStatus(HttpStatus.OK)
     @PreAuthorize("hasAuthority('ROLE_SUPER_ADMIN') or hasAuthority('ROLE_ADMIN')")
     @RequestMapping(value = "/adminUserListing", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiOperation(value = "Get Users Api", notes = "Get list of all Users Linked to current user.")
-    public @ResponseBody ResponseDTO findAllAdminUsersInPagination(@RequestParam(value = "adminId", required = false) Long adminId,
+    @ApiOperation(value = "Get Users", notes = "Endpoint help to get list of all Users Linked to current user.")
+    public @ResponseBody ResponseDTO findAllAdminUsersInPagination(@RequestParam(value = "appUserId", required = false) Long appUserId,
          @RequestParam(value = "page", required = false) Long page, @RequestParam(value = "limit", required = false) Long limit,
          @RequestParam(value = "startDate", required = false) String startDate, @RequestParam(value = "endDate", required = false) String endDate,
          @RequestParam(value = "columnName", required = false) String columnName, @RequestParam(value = "order", required = false) String order,
          @RequestBody SearchTextDto searchTextDto) {
         ResponseDTO response = null;
         try {
-            logger.info("Request for get findAllAdminUsersInPagination " + adminId);
-//            response = this.appUserService.findAllAdminUsersInPagination(PagingUtil.ApplyPaging(page, limit, order, columnName),
-//                    adminId ,searchTextDto, startDate, endDate);
+            logger.info(String.format("Request for findAllAdminUsersInPagination with AppUserId %d ", appUserId));
+            response = this.appUserService.findAllAdminUsersInPagination(PagingUtil.ApplyPagingAndSorting(order,
+                    columnName, page, limit), appUserId ,searchTextDto, startDate, endDate, order, columnName);
         } catch (Exception ex) {
             logger.info("Error during findAllAdminUsersInPagination " + ExceptionUtil.getRootCause(ex));
             response = new ResponseDTO (ApiCode.HTTP_500, ApplicationConstants.UNEXPECTED_ERROR);

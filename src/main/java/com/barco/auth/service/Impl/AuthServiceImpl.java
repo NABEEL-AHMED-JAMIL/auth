@@ -35,26 +35,23 @@ public class AuthServiceImpl implements AuthTokenService {
     @Autowired
     private AppUserRepository appUserRepository;
 
-    @Autowired
-    private BarcoUtil barcoUtil;
 
-
-    public Optional<AppUser> findByUsernameAndStatus(String username, Status status) {
+    public Optional<AppUser> findByUsernameAndStatus(String username, Status status) throws Exception {
         logger.info("Finding AppUser By Username and Status");
         return this.appUserRepository.findByUsernameAndStatus(username, status);
     }
 
-    public Optional<AppUser> findByUsernameAndStatusNot(String username, Status status) {
+    public Optional<AppUser> findByUsernameAndStatusNot(String username, Status status) throws Exception {
         logger.info("Finding AppUser By Username and Status");
         return this.appUserRepository.findByUsernameIgnoreCaseAndStatusNot(username, status);
     }
 
     @Override
-    public ResponseDTO login(JwtAuthenticationRequest jwtAuthenticationRequest) {
+    public ResponseDTO login(JwtAuthenticationRequest jwtAuthenticationRequest) throws Exception {
         AppUser appUser = null;
-        if (this.barcoUtil.isValidEmail(jwtAuthenticationRequest.getUsername().trim())) {
+        if (BarcoUtil.isValidEmail(jwtAuthenticationRequest.getUsername().trim())) {
             appUser = this.appUserRepository.findByUsernameAndStatusNot(jwtAuthenticationRequest.getUsername().trim(), Status.Delete);
-            if (appUser == null) {
+            if (BarcoUtil.isNull(appUser)) {
                 return new ResponseDTO(ApiCode.HTTP_404, ApplicationConstants.USER_NOT_FOUND);
             } else if (appUser.getStatus() != Status.Active) {
                 if (appUser.getStatus().equals(Status.Pending)) {
@@ -68,31 +65,43 @@ public class AuthServiceImpl implements AuthTokenService {
         } else {
             return new ResponseDTO(ApiCode.INVALID_EMAIL_PATTREN, ApplicationConstants.INVALID_EMAIL);
         }
-        if (appUser == null) {
-            return new ResponseDTO(ApiCode.HTTP_404, ApplicationConstants.USER_NOT_FOUND,  null);
+        if (BarcoUtil.isNull(appUser)) {
+            return new ResponseDTO(ApiCode.HTTP_404, ApplicationConstants.USER_NOT_FOUND);
         }
         LoginTokenDTO loginTokenDTO = new LoginTokenDTO(appUser.getId(), appUser.getUsername(),
                 appUser.getFirstName(), appUser.getLastName(), appUser.getUserType());
         String token = this.tokenHelper.generateToken(loginTokenDTO.toString());
-        if (token != null && !token.isEmpty()) {
+        if (!BarcoUtil.isNull(token) && !token.isEmpty()) {
             UserDTO userDTO = setUserResponse(appUser);
-            if (userDTO != null && userDTO.getAppUserId() != null) { userDTO.setToken(token); }
+            if (!BarcoUtil.isNull(userDTO) && !BarcoUtil.isNull(userDTO.getAppUserId())) {
+                userDTO.setToken(token);
+            }
             appUser.setLastLoginAt(new Timestamp(System.currentTimeMillis()));
-            return  new ResponseDTO(ApiCode.SUCCESS, ApplicationConstants.SUCCESS_MSG,  userDTO);
+            return new ResponseDTO(ApiCode.SUCCESS, ApplicationConstants.SUCCESS_MSG,  userDTO);
         } else {
-            return  new ResponseDTO(ApiCode.ERROR, ApplicationConstants.UNEXPECTED_ERROR);
+            return new ResponseDTO(ApiCode.ERROR, ApplicationConstants.UNEXPECTED_ERROR);
         }
     }
 
-    private UserDTO setUserResponse(AppUser appUser) {
+    private UserDTO setUserResponse(AppUser appUser) throws Exception {
         UserDTO userDTO = new UserDTO();
-        if (appUser != null) {
-            if (appUser.getId() != null) { userDTO.setAppUserId(appUser.getId()); }
-            if (appUser.getFirstName() != null) { userDTO.setFirstName(appUser.getFirstName()); }
-            if (appUser.getLastName() != null) { userDTO.setLastName(appUser.getLastName()); }
-            if (appUser.getUsername() != null) { userDTO.setUsername(appUser.getUsername()); }
-            if (appUser.getUserType() != null) { userDTO.setUserType(appUser.getUserType()); }
-            if (appUser.getAuthorities() != null && appUser.getAuthorities().size() > 0) {
+        if (!BarcoUtil.isNull(appUser)) {
+            if (!BarcoUtil.isNull(appUser.getId())) {
+                userDTO.setAppUserId(appUser.getId());
+            }
+            if (!BarcoUtil.isNull(appUser.getFirstName())) {
+                userDTO.setFirstName(appUser.getFirstName());
+            }
+            if (!BarcoUtil.isNull(appUser.getLastName())) {
+                userDTO.setLastName(appUser.getLastName());
+            }
+            if (!BarcoUtil.isNull(appUser.getUsername())) {
+                userDTO.setUsername(appUser.getUsername());
+            }
+            if (!BarcoUtil.isNull(appUser.getUserType())) {
+                userDTO.setUserType(appUser.getUserType());
+            }
+            if (!BarcoUtil.isNull(appUser.getAuthorities()) && appUser.getAuthorities().size() > 0) {
                 List<AuthorityDto> authorityDtos = new ArrayList<>();
                 appUser.getAuthorities().forEach(o -> {
                     AuthorityDto authorityDto = new AuthorityDto();
@@ -101,8 +110,7 @@ public class AuthServiceImpl implements AuthTokenService {
                 });
                 userDTO.setRoles(authorityDtos);
             }
-
-            if (appUser.getAccessServices() != null && appUser.getAccessServices().size() > 0) {
+            if (!BarcoUtil.isNull(appUser.getAccessServices()) && appUser.getAccessServices().size() > 0) {
                 Set<AccessServiceDto> accessServiceDtoSet = new HashSet<>();
                 appUser.getAccessServices().forEach(accessService -> {
                     AccessServiceDto accessServiceDto = new AccessServiceDto();

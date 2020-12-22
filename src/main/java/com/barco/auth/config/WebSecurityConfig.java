@@ -69,7 +69,8 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 
     @Autowired
     public void configureGlobal(AuthenticationManagerBuilder authenticationManagerBuilder) throws Exception {
-        authenticationManagerBuilder.userDetailsService(this.jwtUserDetailsService).passwordEncoder(passwordEncoder());
+        authenticationManagerBuilder.userDetailsService(this.jwtUserDetailsService)
+            .passwordEncoder(passwordEncoder());
     }
 
     @Override

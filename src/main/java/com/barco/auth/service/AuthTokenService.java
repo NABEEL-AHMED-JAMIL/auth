@@ -8,5 +8,5 @@ import com.barco.model.dto.ResponseDTO;
  */
 public interface AuthTokenService {
 
-     ResponseDTO login(JwtAuthenticationRequest jwtAuthenticationRequest);
+     ResponseDTO login(JwtAuthenticationRequest jwtAuthenticationRequest) throws Exception;
 }

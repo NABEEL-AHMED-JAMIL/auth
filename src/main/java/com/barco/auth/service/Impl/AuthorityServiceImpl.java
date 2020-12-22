@@ -34,7 +34,7 @@ public class AuthorityServiceImpl implements AuthorityService {
     private AuthorityRepository authorityRepository;
 
     @Override
-    public ResponseDTO createAuthority(AuthorityDto authorityDto) {
+    public ResponseDTO createAuthority(AuthorityDto authorityDto) throws Exception {
         Authority authority = new Authority();
         if(StringUtils.isNotBlank(authorityDto.getRole())) {
             if(this.authorityRepository.findByRoleIgnoreCaseAndStatus(
@@ -53,7 +53,7 @@ public class AuthorityServiceImpl implements AuthorityService {
     }
 
     @Override
-    public ResponseDTO getAllAuthority() {
+    public ResponseDTO getAllAuthority() throws Exception {
         List<Authority> authorityList = this.authorityRepository.findAllByStatus(Status.Active);
         List<AuthorityDto> authorityDtos = authorityList.stream().map(authority -> {
             AuthorityDto authorityDto = new AuthorityDto();

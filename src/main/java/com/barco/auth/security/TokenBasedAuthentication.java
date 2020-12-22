@@ -21,19 +21,31 @@ public class TokenBasedAuthentication extends AbstractAuthenticationToken {
         this.principle = principle;
     }
 
-    public String getToken() { return token; }
-    public void setToken( String token ) { this.token = token; }
+    public String getToken() {
+        return token;
+    }
+    public void setToken( String token ) {
+        this.token = token;
+    }
 
     @Override
-    public boolean isAuthenticated() { return true; }
+    public boolean isAuthenticated() {
+        return true;
+    }
 
     @Override
-    public Object getCredentials() { return token; }
+    public Object getCredentials() {
+        return token;
+    }
 
     @Override
-    public UserDetails getPrincipal() { return principle; }
+    public UserDetails getPrincipal() {
+        return principle;
+    }
 
     @Override
-    public String toString() { return new Gson().toJson(this); }
+    public String toString() {
+        return new Gson().toJson(this);
+    }
 
 }

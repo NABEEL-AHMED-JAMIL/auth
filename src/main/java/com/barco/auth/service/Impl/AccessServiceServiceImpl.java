@@ -32,7 +32,7 @@ public class AccessServiceServiceImpl implements AccessServiceService {
     private AccessServiceRepository accessServiceRepository;
 
     @Override
-    public ResponseDTO createAccessService(AccessServiceDto accessServiceDto) {
+    public ResponseDTO createAccessService(AccessServiceDto accessServiceDto) throws Exception {
         AccessService accessService = new AccessService();
         accessService.setServiceName(accessServiceDto.getServiceName());
         accessService.setServiceName(accessServiceDto.getInternalServiceName());
@@ -44,7 +44,7 @@ public class AccessServiceServiceImpl implements AccessServiceService {
     }
 
     @Override
-    public ResponseDTO getAllAccessService() {
+    public ResponseDTO getAllAccessService() throws Exception {
         List<AccessServiceDto> accessServiceList = this.accessServiceRepository.findAllByStatus(Status.Active)
             .stream().map(accessService -> {
                 AccessServiceDto accessServiceDto = new AccessServiceDto();

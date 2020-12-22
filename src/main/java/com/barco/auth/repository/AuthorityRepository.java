@@ -19,5 +19,4 @@ public interface AuthorityRepository extends JpaRepository<Authority, Long> {
     Optional<Authority> findByRole(String role);
 
     List<Authority> findAllByStatus(Status status);
-
 }

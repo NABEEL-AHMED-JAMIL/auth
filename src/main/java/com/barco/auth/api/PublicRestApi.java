@@ -34,7 +34,7 @@ public class PublicRestApi {
     // get all authority q.a pass (11-21-2020)
     @ResponseStatus(HttpStatus.OK)
     @RequestMapping(value = "/getAllAuthority", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiOperation(value = "Get All Authority Rest Api.", notes = "Endpoint help to retrieve all authority")
+    @ApiOperation(value = "Get All Authority", notes = "Endpoint help to retrieve all authority")
     public ResponseDTO getAllAuthority() {
         ResponseDTO response = null;
         try {
@@ -51,7 +51,7 @@ public class PublicRestApi {
     // get all access service q.a pass (11-21-2020)
     @ResponseStatus(HttpStatus.OK)
     @RequestMapping(value = "/getAllAccessService", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiOperation(value = "Get All Authority Rest Api.", notes = "Endpoint help retrieve all access service")
+    @ApiOperation(value = "Get All AccessService", notes = "Endpoint help retrieve all access service")
     public ResponseDTO getAllAccessService() {
         ResponseDTO response = null;
         try {

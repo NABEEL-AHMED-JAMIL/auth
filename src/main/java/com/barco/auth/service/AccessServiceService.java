@@ -8,7 +8,7 @@ import com.barco.model.dto.ResponseDTO;
  */
 public interface AccessServiceService {
 
-    ResponseDTO createAccessService(AccessServiceDto accessService);
+    ResponseDTO createAccessService(AccessServiceDto accessService) throws Exception;
 
-    ResponseDTO getAllAccessService();
+    ResponseDTO getAllAccessService() throws Exception;
 }
