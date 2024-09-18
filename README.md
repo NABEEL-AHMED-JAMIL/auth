@@ -4,7 +4,7 @@ We’re thrilled to share our suite of open-source projects with the community! 
 
 ## Our Projects
 
-1. **Model**
+1. **Common**
    - **Description**: The core data common repository.
    - **GitHub**: [Model GitHub Repository](https://github.com/NABEEL-AHMED-JAMIL/common)
 
