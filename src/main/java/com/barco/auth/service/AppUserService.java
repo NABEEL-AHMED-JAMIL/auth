@@ -1,29 +1,34 @@
 package com.barco.auth.service;
 
-import com.barco.model.dto.PagingDto;
-import com.barco.model.dto.ResponseDTO;
-import com.barco.model.dto.SearchTextDto;
-import com.barco.model.dto.UserDTO;
-import org.springframework.data.domain.Pageable;
+import com.barco.model.dto.request.AppUserRequest;
+import com.barco.model.dto.request.EnVariablesRequest;
+import com.barco.model.dto.request.UpdateUserProfileRequest;
+import com.barco.model.dto.response.AppResponse;
+import java.io.ByteArrayOutputStream;
 
 /**
  * @author Nabeel Ahmed
  */
-public interface AppUserService {
+public interface AppUserService extends RootService {
 
-    ResponseDTO saveUserRegistration(UserDTO userDTO) throws Exception;
+    public AppResponse fetchAppUserProfile(String username) throws Exception;
 
-    ResponseDTO saveUserRegistrationByAdmin(UserDTO userDTO) throws Exception;
+    public AppResponse updateAppUserEnvVariable(EnVariablesRequest payload) throws Exception;
 
-    ResponseDTO emailTokenVerification(String token) throws Exception;
+    public AppResponse updateAppUserPassword(UpdateUserProfileRequest payload) throws Exception;
 
-    ResponseDTO forgetPassword(String email) throws Exception;
+    public AppResponse addAppUserAccount(AppUserRequest payload) throws Exception;
 
-    ResponseDTO resetPassword(UserDTO userDTO) throws Exception;
+    public AppResponse updateAppUserAccount(AppUserRequest payload) throws Exception;
 
-    ResponseDTO fetchSuperAdminUserList(Long superAdminId) throws Exception;
+    public AppResponse fetchAllAppUserAccount(AppUserRequest payload) throws Exception;
 
-    ResponseDTO findAllAdminUsersInPagination(Pageable paging, Long adminId, SearchTextDto searchTextDto,
-          String startDate, String endDate, String order, String columnName) throws Exception;
+    public AppResponse deleteAppUserAccount(AppUserRequest payload) throws Exception;
+
+    public AppResponse deleteAllAppUserAccount(AppUserRequest payload) throws Exception;
+
+    public AppResponse enabledDisabledAppUserAccount(AppUserRequest payload) throws Exception;
+
+    public ByteArrayOutputStream downloadAppUserAccount(AppUserRequest payload) throws Exception;
 
 }
