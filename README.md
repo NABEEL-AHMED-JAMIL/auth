@@ -5,24 +5,24 @@ We’re thrilled to share our suite of open-source projects with the community! 
 ## Our Projects
 
 1. **Model**
-    - **Description**: The core data model repository.
-    - **GitHub**: [Model GitHub Repository](https://github.com/NABEEL-AHMED-JAMIL/model)
+   - **Description**: The core data common repository.
+   - **GitHub**: [Model GitHub Repository](https://github.com/NABEEL-AHMED-JAMIL/common)
 
 1. **Model**
-    - **Description**: The core data model repository.
-    - **GitHub**: [Model GitHub Repository](https://github.com/NABEEL-AHMED-JAMIL/model)
+   - **Description**: The core data common repository.
+   - **GitHub**: [Model GitHub Repository](https://github.com/NABEEL-AHMED-JAMIL/model)
 
 3. **Auth**
-    - **Description**: Auth Api for managing the authentication and authorization process.
-    - **GitHub**: [Common GitHub Repository](https://github.com/NABEEL-AHMED-JAMIL/auth)
+   - **Description**: Auth Api for managing the authentication and authorization process.
+   - **GitHub**: [Common GitHub Repository](https://github.com/NABEEL-AHMED-JAMIL/auth)
 
 4. **Admin API**
-    - **Description**: Administrative API for managing the platform.
-    - **GitHub**: [Admin API GitHub Repository](https://github.com/NABEEL-AHMED-JAMIL/admin-api)
+   - **Description**: Administrative API for managing the platform.
+   - **GitHub**: [Admin API GitHub Repository](https://github.com/NABEEL-AHMED-JAMIL/admin-api)
 
 5. **ETL Source**
-    - **Description**: Extract, Transform, Load (ETL) process repository.
-    - **GitHub**: [ETL Source GitHub Repository](https://github.com/NABEEL-AHMED-JAMIL/etl-source)
+   - **Description**: Extract, Transform, Load (ETL) process repository.
+   - **GitHub**: [ETL Source GitHub Repository](https://github.com/NABEEL-AHMED-JAMIL/etl-source)
 
 ## Technologies We Use
 
@@ -53,6 +53,7 @@ Feel free to reach out if you have any questions or need assistance getting star
 🔗 [Model GitHub Repository](https://github.com/NABEEL-AHMED-JAMIL/model)
 🔗 [ETL Source GitHub Repository](https://github.com/NABEEL-AHMED-JAMIL/etl-source)
 🔗 [Common GitHub Repository](https://github.com/NABEEL-AHMED-JAMIL/common)
+🔗 [Auth API GitHub Repository](https://github.com/NABEEL-AHMED-JAMIL/auth)
 🔗 [Admin API GitHub Repository](https://github.com/NABEEL-AHMED-JAMIL/admin-api)
 
 #OpenSource #Java #SpringBoot #PostgreSQL #Angular #DeveloperCommunity #TechForGood
