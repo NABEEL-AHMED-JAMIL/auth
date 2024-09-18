@@ -4,8 +4,8 @@ FROM openjdk:8-jdk-alpine
 LABEL maintainer="nabeel.amd93@gmail.com"
 # Add a volume pointing to /tmp
 VOLUME /tmp
-# Make 9095 available to the world outside this container
-EXPOSE 9095
+# Make 9096 available to the world outside this container
+EXPOSE 9096
 # The application's jar file
 ARG JAR_FILE=/target/auth-0.0.1-SNAPSHOT.jar
 # Add the application jar to the container

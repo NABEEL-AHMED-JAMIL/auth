@@ -6,9 +6,8 @@
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>2.2.2.RELEASE</version>
-		<relativePath/>
-		<!-- lookup parent from repository -->
+		<version>2.3.2.RELEASE</version>
+		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 
 	<licenses>
@@ -26,25 +25,19 @@
 			<organization>Barco</organization>
 			<organizationUrl>https://github.com/NABEEL-AHMED-JAMIL</organizationUrl>
 		</developer>
-		<developer>
-			<name>Adeel Asghar</name>
-			<email>adeelasghar2011@gmail.com</email>
-			<organization>Barco</organization>
-			<organizationUrl>https://github.com/adeelasghar</organizationUrl>
-		</developer>
 	</developers>
 
 	<groupId>com.barco</groupId>
 	<artifactId>auth</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>auth</name>
-	<description>Barco Cron Auth</description>
+	<description>Auth Api For Barco</description>
 
 	<properties>
-		<java.version>1.8</java.version>
+		<java.version>11</java.version>
 		<postgresql.version>42.2.5</postgresql.version>
-		<jpa.version>2.1.8.RELEASE</jpa.version>
 		<disruptor.version>3.4.2</disruptor.version>
+		<jpa.version>2.1.8.RELEASE</jpa.version>
 		<swagger.version>2.9.2</swagger.version>
 	</properties>
 
@@ -53,27 +46,29 @@
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-web</artifactId>
-			<exclusions>
-				<exclusion>
-					<groupId>org.springframework.boot</groupId>
-					<artifactId>spring-boot-starter-logging</artifactId>
-				</exclusion>
-			</exclusions>
 		</dependency>
 
-		<!--	model package import	-->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-security</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-websocket</artifactId>
+		</dependency>
+
 		<dependency>
 			<groupId>com.barco</groupId>
 			<artifactId>model</artifactId>
-			<version>0.0.1-SNAPSHOT</version>
+			<version>9.18.2024</version>
 			<classifier>barco-model</classifier>
 		</dependency>
 
-		<!--	common package import	-->
 		<dependency>
 			<groupId>com.barco</groupId>
 			<artifactId>common</artifactId>
-			<version>0.0.1-SNAPSHOT</version>
+			<version>9.18.2024</version>
 			<classifier>barco-common-util</classifier>
 		</dependency>
 

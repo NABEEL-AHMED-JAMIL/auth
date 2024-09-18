@@ -1,11 +1,10 @@
 package com.barco.auth.config;
 
-
-import com.barco.auth.security.RestAuthenticationEntryPoint;
-import com.barco.model.service.CustomUserDetailsService;
-import com.barco.common.filter.TokenAuthenticationFilter;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import com.barco.auth.filter.AuthTokenFilter;
+import com.barco.common.security.AuthEntryPointJwt;
+import com.barco.model.security.UserDetailsServiceImpl;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -13,73 +12,89 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.builders.WebSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-
 
 /**
  * @author Nabeel Ahmed
- * detail of EnableGlobalMethodSecurity
- * securedEnabled: It enables the @Secured annotation using which you can protect your controller/service methods
- * @Secured("ROLE_ADMIN"), @Secured({"ROLE_USER", "ROLE_ADMIN"})
- * jsr250Enabled: It enables the @RolesAllowed annotation that can be used like this
- * @RolesAllowed("ROLE_ADMIN")
- * prePostEnabled: It enables more complex expression based access control syntax with
- * @PreAuthorize and @PostAuthorize annotations
- * @PreAuthorize("isAnonymous()"), @PreAuthorize("hasRole('USER')")
  */
 @Configuration
 @EnableWebSecurity
-@EnableGlobalMethodSecurity(prePostEnabled = true, securedEnabled = true)
+@EnableGlobalMethodSecurity(prePostEnabled = true)
 public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 
-    public Logger logger = LogManager.getLogger(WebSecurityConfig.class);
-
-    private static final String[] AUTH_WHITELIST = {
-        "/v2/api-docs", "/swagger-resources",
-        "/swagger-resources/**", "/configuration/ui",
-        "/configuration/security", "/swagger-ui.html",
-        "/webjars/**","/public.json/**","/auth.json/**"
-    };
+    private Logger logger = LoggerFactory.getLogger(WebSecurityConfig.class);
 
     @Autowired
-    private RestAuthenticationEntryPoint restAuthenticationEntryPoint;
-
+    private AuthEntryPointJwt unauthorizedHandler;
     @Autowired
-    private CustomUserDetailsService jwtUserDetailsService;
+    private UserDetailsServiceImpl userDetailsService;
 
+    public WebSecurityConfig() {}
+
+    /**
+     * Method use to add authentication jwt
+     * @return AuthTokenFilter
+     * */
     @Bean
-    public TokenAuthenticationFilter jwtAuthenticationTokenFilter() throws Exception {
-        return new TokenAuthenticationFilter();
+    public AuthTokenFilter authenticationJwtTokenFilter() {
+        return new AuthTokenFilter();
     }
 
+    /**
+     * Method use to add authentication manger builder
+     * @param authenticationManagerBuilder
+     * */
+    @Override
+    public void configure(AuthenticationManagerBuilder authenticationManagerBuilder) throws Exception {
+        authenticationManagerBuilder.userDetailsService(this.userDetailsService).passwordEncoder(passwordEncoder());
+    }
+
+    /**
+     * Method use to add authentication manger
+     * @return AuthenticationManager
+     * */
     @Bean
     @Override
     public AuthenticationManager authenticationManagerBean() throws Exception {
         return super.authenticationManagerBean();
     }
 
+    /**
+     * method use to encode the password
+     * @return PasswordEncoder
+     * */
     @Bean
-    public BCryptPasswordEncoder passwordEncoder() {
+    public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
-    @Autowired
-    public void configureGlobal(AuthenticationManagerBuilder authenticationManagerBuilder) throws Exception {
-        authenticationManagerBuilder.userDetailsService(this.jwtUserDetailsService)
-            .passwordEncoder(passwordEncoder());
-    }
-
+    /**
+     * method ue to configure the http
+     * @param http
+     * */
     @Override
     protected void configure(HttpSecurity http) throws Exception {
-        http.cors().and().csrf().disable().authorizeRequests()
-            .antMatchers(AUTH_WHITELIST).permitAll().anyRequest().authenticated()
-            .and().exceptionHandling().authenticationEntryPoint(this.restAuthenticationEntryPoint)
-            .and().sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS);
-        http.addFilterBefore(jwtAuthenticationTokenFilter(), UsernamePasswordAuthenticationFilter.class);
+        http.cors().and().csrf().disable().exceptionHandling().authenticationEntryPoint(this.unauthorizedHandler).and()
+        .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS).and().authorizeRequests()
+        .antMatchers("/auth.json/**", "/ws/**", "/user/**").permitAll()
+        .antMatchers("/api/v2/**").permitAll().anyRequest().authenticated();
+        http.addFilterBefore(authenticationJwtTokenFilter(), UsernamePasswordAuthenticationFilter.class);
+    }
+
+    /**
+     * method use to configure teh white list url
+     * @param web
+     * */
+    @Override
+    public void configure(WebSecurity web) throws Exception {
+        web.ignoring().antMatchers("/v2/api-docs", "/configuration/ui", "/swagger-resources/**",
+            "/configuration/security", "/swagger-ui.html", "/webjars/**");
     }
 
 }

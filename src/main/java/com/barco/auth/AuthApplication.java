@@ -1,10 +1,10 @@
 package com.barco.auth;
 
+import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
-import javax.annotation.PostConstruct;
-import java.util.TimeZone;
 
 /**
  * @author Nabeel Ahmed
@@ -17,9 +17,10 @@ public class AuthApplication {
 		SpringApplication.run(AuthApplication.class, args);
 	}
 
-	@PostConstruct
-	public void started() {
-		TimeZone.setDefault(TimeZone.getTimeZone("America/New_York"));
+	@Bean
+	public CommandLineRunner commandLineRunner() {
+		return (args) -> {
+		};
 	}
 
 }
