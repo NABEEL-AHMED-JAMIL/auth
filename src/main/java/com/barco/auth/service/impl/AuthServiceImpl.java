@@ -147,8 +147,7 @@ public class AuthServiceImpl implements AuthService {
             LookupUtil.ROOT_USER).getLookupValue(), APPLICATION_STATUS.ACTIVE);
         if (superAdmin.isPresent()) {
             // linking all env variable to the user give by the system
-            for (EnvVariables envVariables : this.envVariablesRepository.findAllByCreatedByAndStatusNotOrderByDateCreatedDesc(
-                superAdmin.get(), APPLICATION_STATUS.DELETE)) {
+            for (EnvVariables envVariables : this.envVariablesRepository.findAllByCreatedByAndStatusNotOrderByDateCreatedDesc(superAdmin.get(), APPLICATION_STATUS.DELETE)) {
                 this.appUserEnvRepository.save(this.getAppUserEnv(superAdmin.get(), newAppUser, envVariables));
             }
             // event bridge only receiver event bridge if exist and create by the main user
@@ -229,7 +228,7 @@ public class AuthServiceImpl implements AuthService {
         }
         Optional<RefreshToken> refreshToken = this.refreshTokenService.findByToken(payload.getRefreshToken());
         if (refreshToken.isEmpty()) {
-            return new AppResponse(BarcoUtil.ERROR, String.format(MessageUtil.DATA_NOT_FOUND, MessageUtil.REFRESH_TOKEN), payload);
+            return new AppResponse(BarcoUtil.ERROR, String.format(MessageUtil.DATA_NOT_FOUND, MessageUtil.REFRESH_TOKEN));
         }
         AppResponse appResponse = this.refreshTokenService.verifyExpiration(refreshToken.get());
         if (appResponse.getStatus().equals(BarcoUtil.SUCCESS)) {

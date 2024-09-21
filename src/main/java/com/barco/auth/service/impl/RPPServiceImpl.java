@@ -15,7 +15,6 @@ import com.barco.model.util.MessageUtil;
 import com.barco.model.util.lookup.APPLICATION_STATUS;
 import com.barco.model.util.lookup.GLookup;
 import com.barco.model.util.lookup.LookupUtil;
-import com.google.gson.Gson;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
@@ -72,15 +71,12 @@ public class RPPServiceImpl implements RPPService {
     @Override
     public AppResponse addRole(RoleRequest payload) throws Exception {
         logger.info("Request addRole :- {}.", payload);
-        AppResponse validationResponse = this.validateUsername(payload);
-        if (!BarcoUtil.isNull(validationResponse)) {
-            return validationResponse;
-        } else if (BarcoUtil.isNull(payload.getName())) {
-            return new AppResponse(BarcoUtil.ERROR, MessageUtil.ROLE_NAME_MISSING, payload);
+        if (BarcoUtil.isNull(payload.getName())) {
+            return new AppResponse(BarcoUtil.ERROR, MessageUtil.ROLE_NAME_MISSING);
         } else if (BarcoUtil.isNull(payload.getDescription())) {
-            return new AppResponse(BarcoUtil.ERROR, MessageUtil.ROLE_DESCRIPTION_MISSING, payload);
+            return new AppResponse(BarcoUtil.ERROR, MessageUtil.ROLE_DESCRIPTION_MISSING);
         } else if (this.roleRepository.findRoleByName(payload.getName()).isPresent()) {
-            return new AppResponse(BarcoUtil.ERROR, MessageUtil.ROLE_ALREADY_EXIST, payload);
+            return new AppResponse(BarcoUtil.ERROR, MessageUtil.ROLE_ALREADY_EXIST);
         }
         Optional<AppUser> appUser = this.appUserRepository.findByUsernameAndStatus(payload.getSessionUser().getUsername(), APPLICATION_STATUS.ACTIVE);
         Role role = new Role();
@@ -90,7 +86,7 @@ public class RPPServiceImpl implements RPPService {
         role.setUpdatedBy(appUser.get());
         role.setStatus(APPLICATION_STATUS.ACTIVE);
         this.roleRepository.save(role);
-        return new AppResponse(BarcoUtil.SUCCESS, String.format(MessageUtil.DATA_SAVED, role.getId().toString()), payload);
+        return new AppResponse(BarcoUtil.SUCCESS, String.format(MessageUtil.DATA_SAVED, role.getUuid()), payload);
     }
 
     /**
@@ -102,19 +98,16 @@ public class RPPServiceImpl implements RPPService {
     @Override
     public AppResponse updateRole(RoleRequest payload) throws Exception {
         logger.info("Request updateRole :-  {}.", payload);
-        AppResponse validationResponse = this.validateUsername(payload);
-        if (!BarcoUtil.isNull(validationResponse)) {
-            return validationResponse;
-        } else if (BarcoUtil.isNull(payload.getUuid())) {
-            return new AppResponse(BarcoUtil.ERROR, MessageUtil.ROLE_ID_MISSING, payload);
+        if (BarcoUtil.isNull(payload.getUuid())) {
+            return new AppResponse(BarcoUtil.ERROR, MessageUtil.ROLE_ID_MISSING);
         } else if (BarcoUtil.isNull(payload.getName())) {
-            return new AppResponse(BarcoUtil.ERROR, MessageUtil.ROLE_NAME_MISSING, payload);
+            return new AppResponse(BarcoUtil.ERROR, MessageUtil.ROLE_NAME_MISSING);
         }
         Optional<Role> role = this.roleRepository.findByUuid(payload.getUuid());
         if (role.isEmpty()) {
-            return new AppResponse(BarcoUtil.ERROR, String.format(MessageUtil.ROLE_NOT_FOUND_WITH_ID, payload.getId()), payload);
+            return new AppResponse(BarcoUtil.ERROR, String.format(MessageUtil.ROLE_NOT_FOUND_WITH_ID, payload.getUuid()));
         } else if (!role.get().getName().equals(payload.getName()) && this.roleRepository.findRoleByName(payload.getName()).isPresent()) {
-            return new AppResponse(BarcoUtil.ERROR, MessageUtil.ROLE_ALREADY_EXIST, payload);
+            return new AppResponse(BarcoUtil.ERROR, MessageUtil.ROLE_ALREADY_EXIST);
         }
         role.get().setName(payload.getName());
         if (!BarcoUtil.isNull(payload.getDescription())) {
@@ -126,15 +119,15 @@ public class RPPServiceImpl implements RPPService {
             // if status is in-active & delete then we have filter the role and show only those role in user detail
             role.get().setStatus(APPLICATION_STATUS.getByLookupCode(payload.getStatus()));
             role.get().getRoleAccesses().stream()
-                .map(appUserRoleAccess -> {
-                    appUserRoleAccess.setStatus(role.get().getStatus());
-                    appUserRoleAccess.setUpdatedBy(appUser.get());
-                    return appUserRoleAccess;
-                });
+            .map(appUserRoleAccess -> {
+                appUserRoleAccess.setStatus(role.get().getStatus());
+                appUserRoleAccess.setUpdatedBy(appUser.get());
+                return appUserRoleAccess;
+            });
         }
         role.get().setUpdatedBy(appUser.get());
         this.roleRepository.save(role.get());
-        return new AppResponse(BarcoUtil.SUCCESS, String.format(MessageUtil.DATA_SAVED, role.get().getId().toString()), payload);
+        return new AppResponse(BarcoUtil.SUCCESS, String.format(MessageUtil.DATA_UPDATE, payload.getUuid()), payload);
     }
 
     /**
@@ -160,11 +153,11 @@ public class RPPServiceImpl implements RPPService {
     public AppResponse findRoleById(RoleRequest payload) throws Exception {
         logger.info("Request findRoleById :- {}.", payload);
         if (BarcoUtil.isNull(payload.getUuid())) {
-            return new AppResponse(BarcoUtil.ERROR, MessageUtil.ROLE_ID_MISSING, payload);
+            return new AppResponse(BarcoUtil.ERROR, MessageUtil.ROLE_ID_MISSING);
         }
         return this.roleRepository.findByUuid(payload.getUuid())
             .map(value -> new AppResponse(BarcoUtil.SUCCESS, MessageUtil.DATA_FETCH_SUCCESSFULLY, this.gateRoleResponse(value)))
-            .orElseGet(() -> new AppResponse(BarcoUtil.ERROR, String.format(MessageUtil.ROLE_NOT_FOUND_WITH_ID, payload.getId()), payload));
+            .orElseGet(() -> new AppResponse(BarcoUtil.ERROR, String.format(MessageUtil.ROLE_NOT_FOUND_WITH_ID, payload.getUuid())));
     }
 
     /**
@@ -177,11 +170,11 @@ public class RPPServiceImpl implements RPPService {
     public AppResponse deleteRoleById(RoleRequest payload) throws Exception {
         logger.info("Request deleteRoleById :- {}.", payload);
         if (BarcoUtil.isNull(payload.getUuid())) {
-            return new AppResponse(BarcoUtil.ERROR, MessageUtil.ROLE_ID_MISSING, payload);
+            return new AppResponse(BarcoUtil.ERROR, MessageUtil.ROLE_ID_MISSING);
         }
         Optional<Role> role = this.roleRepository.findByUuid(payload.getUuid());
         if (role.isEmpty()) {
-            return new AppResponse(BarcoUtil.ERROR, String.format(MessageUtil.ROLE_NOT_FOUND_WITH_ID, payload.getUuid()), payload);
+            return new AppResponse(BarcoUtil.ERROR, String.format(MessageUtil.ROLE_NOT_FOUND_WITH_ID, payload.getUuid()));
         }
         this.roleRepository.delete(role.get());
         return new AppResponse(BarcoUtil.SUCCESS, String.format(MessageUtil.DATA_DELETED, payload.getUuid()));
@@ -196,7 +189,7 @@ public class RPPServiceImpl implements RPPService {
     @Override
     public AppResponse deleteAllRole(RoleRequest payload) throws Exception {
         logger.info("Request deleteAllRole :- {}.", payload);
-        if (BarcoUtil.isNull(payload.getUuid())) {
+        if (BarcoUtil.isNull(payload.getUuids())) {
             return new AppResponse(BarcoUtil.ERROR, MessageUtil.IDS_MISSING);
         }
         this.roleRepository.deleteAll(this.roleRepository.findAllByUuidIn(payload.getUuids()));
@@ -223,10 +216,6 @@ public class RPPServiceImpl implements RPPService {
     @Override
     public ByteArrayOutputStream downloadRole(RoleRequest payload) throws Exception {
         logger.info("Request downloadRole :- {}.", payload);
-        AppResponse validationResponse = this.validateUsername(payload);
-        if (!BarcoUtil.isNull(validationResponse)) {
-            throw new Exception(MessageUtil.APPUSER_NOT_FOUND);
-        }
         SheetFiled sheetFiled = this.lookupDataCacheService.getSheetFiledMap().get(ExcelUtil.ROLE);
         XSSFWorkbook workbook = new XSSFWorkbook();
         this.bulkExcel.setWb(workbook);
@@ -235,18 +224,15 @@ public class RPPServiceImpl implements RPPService {
         AtomicInteger rowCount = new AtomicInteger();
         this.bulkExcel.fillBulkHeader(rowCount.get(), sheetFiled.getColTitle());
         Iterator<Role> roleList;
-        if (!BarcoUtil.isNull(payload.getIds()) && !payload.getIds().isEmpty()) {
-            roleList = this.roleRepository.findAllByIdIn(payload.getIds()).iterator();
+        if (!BarcoUtil.isNull(payload.getUuids()) && !payload.getUuids().isEmpty()) {
+            roleList = this.roleRepository.findAllByUuidIn(payload.getUuids()).iterator();
         } else {
             roleList = this.roleRepository.findAll().iterator();
         }
         while (roleList.hasNext()) {
-            Role role = roleList.next();
             rowCount.getAndIncrement();
-            List<String> dataCellValue = new ArrayList<>();
-            dataCellValue.add(role.getName());
-            dataCellValue.add(role.getDescription());
-            this.bulkExcel.fillBulkBody(dataCellValue, rowCount.get());
+            Role role = roleList.next();
+            this.bulkExcel.fillBulkBody(List.of(role.getName(), role.getDescription()), rowCount.get());
         }
         ByteArrayOutputStream outStream = new ByteArrayOutputStream();
         workbook.write(outStream);
@@ -262,11 +248,7 @@ public class RPPServiceImpl implements RPPService {
     @Override
     public AppResponse uploadRole(FileUploadRequest payload) throws Exception {
         logger.info("Request for bulk uploading file for role!");
-        LookupDataRequest lookupDataRequest = new Gson().fromJson((String) payload.getData(), LookupDataRequest.class);
-        AppResponse validationResponse = this.validateUsername(payload);
-        if (!BarcoUtil.isNull(validationResponse)) {
-            return validationResponse;
-        }
+        SessionUser sessionUser = (SessionUser) payload.getData();
         if (!payload.getFile().getContentType().equalsIgnoreCase(ExcelUtil.SHEET_TYPE)) {
             logger.info("File Type {}.", payload.getFile().getContentType());
             return new AppResponse(BarcoUtil.ERROR, MessageUtil.XLSX_FILE_ONLY);
@@ -293,7 +275,7 @@ public class RPPServiceImpl implements RPPService {
                 for (int i = 0; i < sheetFiled.getColTitle().size(); i++) {
                     if (!currentRow.getCell(i).getStringCellValue().equals(sheetFiled.getColTitle().get(i))) {
                         return new AppResponse(BarcoUtil.ERROR, "File at row " + (currentRow.getRowNum() + 1)
-                                + " " + sheetFiled.getColTitle().get(i) + " heading missing.");
+                            + " " + sheetFiled.getColTitle().get(i) + " heading missing.");
                     }
                 }
             } else if (currentRow.getRowNum() > 0) {
@@ -322,7 +304,7 @@ public class RPPServiceImpl implements RPPService {
         if (!errors.isEmpty()) {
             return new AppResponse(BarcoUtil.ERROR, String.format(MessageUtil.TOTAL_INVALID, errors.size()), errors);
         }
-        Optional<AppUser> appUser = this.appUserRepository.findByUsernameAndStatus(lookupDataRequest.getSessionUser().getUsername(), APPLICATION_STATUS.ACTIVE);
+        Optional<AppUser> appUser = this.appUserRepository.findByUsernameAndStatus(sessionUser.getUsername(), APPLICATION_STATUS.ACTIVE);
         rppValidationsList.forEach(rppValidation -> {
             Role role = new Role();
             role.setName(rppValidation.getName());
@@ -332,7 +314,7 @@ public class RPPServiceImpl implements RPPService {
             role.setStatus(APPLICATION_STATUS.ACTIVE);
             this.roleRepository.save(role);
         });
-        return new AppResponse(BarcoUtil.SUCCESS, String.format(MessageUtil.DATA_SAVED, ""));
+        return new AppResponse(BarcoUtil.SUCCESS, MessageUtil.FILE_UPLOAD);
     }
 
     /**
@@ -344,15 +326,12 @@ public class RPPServiceImpl implements RPPService {
     @Override
     public AppResponse addProfile(ProfileRequest payload) throws Exception {
         logger.info("Request addProfile :- {}.", payload);
-        AppResponse validationResponse = this.validateUsername(payload);
-        if (!BarcoUtil.isNull(validationResponse)) {
-            return validationResponse;
-        } else if (BarcoUtil.isNull(payload.getProfileName())) {
-            return new AppResponse(BarcoUtil.ERROR, MessageUtil.PROFILE_NAME_MISSING, payload);
+        if (BarcoUtil.isNull(payload.getProfileName())) {
+            return new AppResponse(BarcoUtil.ERROR, MessageUtil.PROFILE_NAME_MISSING);
         } else if (BarcoUtil.isNull(payload.getDescription())) {
-            return new AppResponse(BarcoUtil.ERROR, MessageUtil.PROFILE_DESCRIPTION_MISSING, payload);
+            return new AppResponse(BarcoUtil.ERROR, MessageUtil.PROFILE_DESCRIPTION_MISSING);
         } else if (this.profileRepository.findProfileByProfileName(payload.getProfileName()).isPresent()) {
-            return new AppResponse(BarcoUtil.ERROR, MessageUtil.PROFILE_ALREADY_EXIST, payload);
+            return new AppResponse(BarcoUtil.ERROR, MessageUtil.PROFILE_ALREADY_EXIST);
         }
         Optional<AppUser> appUser = this.appUserRepository.findByUsernameAndStatus(payload.getSessionUser().getUsername(), APPLICATION_STATUS.ACTIVE);
         Profile profile = new Profile();
@@ -362,7 +341,7 @@ public class RPPServiceImpl implements RPPService {
         profile.setUpdatedBy(appUser.get());
         profile.setStatus(APPLICATION_STATUS.ACTIVE);
         this.profileRepository.save(profile);
-        return new AppResponse(BarcoUtil.SUCCESS, String.format(MessageUtil.DATA_SAVED,profile.getId().toString()), payload);
+        return new AppResponse(BarcoUtil.SUCCESS, String.format(MessageUtil.DATA_SAVED, profile.getUuid()));
     }
 
     /**
@@ -374,21 +353,19 @@ public class RPPServiceImpl implements RPPService {
     @Override
     public AppResponse updateProfile(ProfileRequest payload) throws Exception {
         logger.info("Request updateProfile :- {}.", payload);
-        AppResponse validationResponse = this.validateUsername(payload);
-        if (!BarcoUtil.isNull(validationResponse)) {
-            return validationResponse;
-        } else if (BarcoUtil.isNull(payload.getUuid())) {
-            return new AppResponse(BarcoUtil.ERROR, MessageUtil.PROFILE_ID_MISSING, payload);
+        if (BarcoUtil.isNull(payload.getUuid())) {
+            return new AppResponse(BarcoUtil.ERROR, MessageUtil.PROFILE_ID_MISSING);
         } else if (BarcoUtil.isNull(payload.getProfileName())) {
-            return new AppResponse(BarcoUtil.ERROR, MessageUtil.PROFILE_NAME_MISSING, payload);
+            return new AppResponse(BarcoUtil.ERROR, MessageUtil.PROFILE_NAME_MISSING);
         } else if (BarcoUtil.isNull(payload.getDescription())) {
-            return new AppResponse(BarcoUtil.ERROR, MessageUtil.PROFILE_DESCRIPTION_MISSING, payload);
+            return new AppResponse(BarcoUtil.ERROR, MessageUtil.PROFILE_DESCRIPTION_MISSING);
         }
         Optional<Profile> profile = this.profileRepository.findByUuid(payload.getUuid());
         if (profile.isEmpty()) {
-            return new AppResponse(BarcoUtil.ERROR, String.format(MessageUtil.PROFILE_NOT_FOUND_WITH_ID, payload.getUuid()), payload);
-        } else if (!profile.get().getProfileName().equals(payload.getProfileName()) && this.profileRepository.findProfileByProfileName(payload.getProfileName()).isPresent()) {
-            return new AppResponse(BarcoUtil.ERROR, MessageUtil.PROFILE_ALREADY_EXIST, payload);
+            return new AppResponse(BarcoUtil.ERROR, String.format(MessageUtil.PROFILE_NOT_FOUND_WITH_ID, payload.getUuid()));
+        } else if (!profile.get().getProfileName().equals(payload.getProfileName()) &&
+            this.profileRepository.findProfileByProfileName(payload.getProfileName()).isPresent()) {
+            return new AppResponse(BarcoUtil.ERROR, MessageUtil.PROFILE_ALREADY_EXIST);
         }
         profile.get().setProfileName(payload.getProfileName());
         if (!BarcoUtil.isNull(payload.getDescription())) {
@@ -397,26 +374,24 @@ public class RPPServiceImpl implements RPPService {
         // active and in-active
         Optional<AppUser> appUser = this.appUserRepository.findByUsernameAndStatus(payload.getSessionUser().getUsername(), APPLICATION_STATUS.ACTIVE);
         if (!BarcoUtil.isNull(payload.getStatus())) {
-            // profile status
             profile.get().setStatus(APPLICATION_STATUS.getByLookupCode(payload.getStatus()));
-            // profile-permission
             profile.get().getProfilePermissions().stream()
-                .map(profilePermission -> {
-                    profilePermission.setStatus(APPLICATION_STATUS.getByLookupCode(payload.getStatus()));
-                    profilePermission.setUpdatedBy(appUser.get());
-                    return profilePermission;
-                });
+            .map(profilePermission -> {
+                profilePermission.setStatus(APPLICATION_STATUS.getByLookupCode(payload.getStatus()));
+                profilePermission.setUpdatedBy(appUser.get());
+                return profilePermission;
+            });
             // profile-access
             profile.get().getProfileAccesses().stream()
-                .map(appUserProfileAccess -> {
-                    appUserProfileAccess.setStatus(APPLICATION_STATUS.getByLookupCode(payload.getStatus()));
-                    appUserProfileAccess.setUpdatedBy(appUser.get());
-                    return appUserProfileAccess;
-                });
+            .map(appUserProfileAccess -> {
+                appUserProfileAccess.setStatus(APPLICATION_STATUS.getByLookupCode(payload.getStatus()));
+                appUserProfileAccess.setUpdatedBy(appUser.get());
+                return appUserProfileAccess;
+            });
         }
         profile.get().setUpdatedBy(appUser.get());
         this.profileRepository.save(profile.get());
-        return new AppResponse(BarcoUtil.SUCCESS, String.format(MessageUtil.DATA_SAVED, profile.get().getId().toString()), payload);
+        return new AppResponse(BarcoUtil.SUCCESS, String.format(MessageUtil.DATA_SAVED, profile.get().getUuid()));
     }
 
     /**
@@ -442,11 +417,11 @@ public class RPPServiceImpl implements RPPService {
     public AppResponse fetchProfileById(ProfileRequest payload) throws Exception {
         logger.info("Request fetchProfileById :- {}.", payload);
         if (BarcoUtil.isNull(payload.getUuid())) {
-            return new AppResponse(BarcoUtil.ERROR, MessageUtil.PROFILE_ID_MISSING, payload);
+            return new AppResponse(BarcoUtil.ERROR, MessageUtil.PROFILE_ID_MISSING);
         }
         return this.profileRepository.findByUuid(payload.getUuid())
             .map(value -> new AppResponse(BarcoUtil.SUCCESS, MessageUtil.DATA_FETCH_SUCCESSFULLY, this.gateProfileResponse(value)))
-            .orElseGet(() -> new AppResponse(BarcoUtil.ERROR, String.format(MessageUtil.PROFILE_NOT_FOUND_WITH_ID, payload.getUuid()), payload));
+            .orElseGet(() -> new AppResponse(BarcoUtil.ERROR, String.format(MessageUtil.PROFILE_NOT_FOUND_WITH_ID, payload.getUuid())));
     }
 
     /**
@@ -459,14 +434,14 @@ public class RPPServiceImpl implements RPPService {
     public AppResponse deleteProfileById(ProfileRequest payload) throws Exception {
         logger.info("Request deleteProfileById :- {}.", payload);
         if (BarcoUtil.isNull(payload.getUuid())) {
-            return new AppResponse(BarcoUtil.ERROR, MessageUtil.PROFILE_ID_MISSING, payload);
+            return new AppResponse(BarcoUtil.ERROR, MessageUtil.PROFILE_ID_MISSING);
         }
         Optional<Profile> profile = this.profileRepository.findByUuid(payload.getUuid());
         if (profile.isEmpty()) {
-            return new AppResponse(BarcoUtil.ERROR, String.format(MessageUtil.PROFILE_NOT_FOUND_WITH_ID, payload.getUuid()), payload);
+            return new AppResponse(BarcoUtil.ERROR, String.format(MessageUtil.PROFILE_NOT_FOUND_WITH_ID, payload.getUuid()));
         }
         this.profileRepository.delete(profile.get());
-        return new AppResponse(BarcoUtil.SUCCESS, String.format(MessageUtil.DATA_DELETED, payload.getUuid().toString()));
+        return new AppResponse(BarcoUtil.SUCCESS, String.format(MessageUtil.DATA_DELETED, payload.getUuid()));
     }
 
     /**
@@ -478,7 +453,7 @@ public class RPPServiceImpl implements RPPService {
     @Override
     public AppResponse deleteAllProfile(ProfileRequest payload) throws Exception {
         logger.info("Request deleteAllProfile :- {}.", payload);
-        if (BarcoUtil.isNull(payload.getIds())) {
+        if (BarcoUtil.isNull(payload.getUuids())) {
             return new AppResponse(BarcoUtil.ERROR, MessageUtil.IDS_MISSING);
         }
         this.profileRepository.deleteAll(this.profileRepository.findAllByUuidIn(payload.getUuids()));
@@ -506,10 +481,6 @@ public class RPPServiceImpl implements RPPService {
     @Override
     public ByteArrayOutputStream downloadProfile(ProfileRequest payload) throws Exception {
         logger.info("Request downloadProfile :- {}.", payload);
-        AppResponse validationResponse = this.validateUsername(payload);
-        if (!BarcoUtil.isNull(validationResponse)) {
-            throw new Exception(MessageUtil.USERNAME_MISSING);
-        }
         SheetFiled sheetFiled = this.lookupDataCacheService.getSheetFiledMap().get(ExcelUtil.PROFILE);
         XSSFWorkbook workbook = new XSSFWorkbook();
         this.bulkExcel.setWb(workbook);
@@ -518,18 +489,15 @@ public class RPPServiceImpl implements RPPService {
         AtomicInteger rowCount = new AtomicInteger();
         this.bulkExcel.fillBulkHeader(rowCount.get(), sheetFiled.getColTitle());
         Iterator<Profile> profileList;
-        if (!BarcoUtil.isNull(payload.getIds()) && !payload.getIds().isEmpty()) {
-            profileList = this.profileRepository.findAllByIdIn(payload.getIds()).iterator();
+        if (!BarcoUtil.isNull(payload.getUuids()) && !payload.getUuids().isEmpty()) {
+            profileList = this.profileRepository.findAllByUuidIn(payload.getUuids()).iterator();
         } else {
             profileList = this.profileRepository.findAll().iterator();
         }
         while (profileList.hasNext()) {
             Profile profile = profileList.next();
             rowCount.getAndIncrement();
-            List<String> dataCellValue = new ArrayList<>();
-            dataCellValue.add(profile.getProfileName());
-            dataCellValue.add(profile.getDescription());
-            this.bulkExcel.fillBulkBody(dataCellValue, rowCount.get());
+            this.bulkExcel.fillBulkBody(List.of(profile.getProfileName(), profile.getDescription()), rowCount.get());
         }
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         workbook.write(outputStream);
@@ -545,11 +513,7 @@ public class RPPServiceImpl implements RPPService {
     @Override
     public AppResponse uploadProfile(FileUploadRequest payload) throws Exception {
         logger.info("Request for bulk uploading file for profile!");
-        LookupDataRequest lookupDataRequest = new Gson().fromJson((String) payload.getData(), LookupDataRequest.class);
-        AppResponse validationResponse = this.validateUsername(lookupDataRequest);
-        if (!BarcoUtil.isNull(validationResponse)) {
-            throw new Exception(MessageUtil.USERNAME_MISSING);
-        }
+        SessionUser sessionUser = (SessionUser) payload.getData();
         if (!payload.getFile().getContentType().equalsIgnoreCase(ExcelUtil.SHEET_TYPE)) {
             logger.info("File Type {}", payload.getFile().getContentType());
             return new AppResponse(BarcoUtil.ERROR, MessageUtil.XLSX_FILE_ONLY);
@@ -576,7 +540,7 @@ public class RPPServiceImpl implements RPPService {
                 for (int i = 0; i < sheetFiled.getColTitle().size(); i++) {
                     if (!currentRow.getCell(i).getStringCellValue().equals(sheetFiled.getColTitle().get(i))) {
                         return new AppResponse(BarcoUtil.ERROR, "File at row " + (currentRow.getRowNum() + 1)
-                                + " " + sheetFiled.getColTitle().get(i) + " heading missing.");
+                            + " " + sheetFiled.getColTitle().get(i) + " heading missing.");
                     }
                 }
             } else if (currentRow.getRowNum() > 0) {
@@ -605,7 +569,7 @@ public class RPPServiceImpl implements RPPService {
         if (!errors.isEmpty()) {
             return new AppResponse(BarcoUtil.ERROR, String.format(MessageUtil.TOTAL_INVALID, errors.size()), errors);
         }
-        Optional<AppUser> appUser = this.appUserRepository.findByUsernameAndStatus(lookupDataRequest.getSessionUser().getUsername(), APPLICATION_STATUS.ACTIVE);
+        Optional<AppUser> appUser = this.appUserRepository.findByUsernameAndStatus(sessionUser.getUsername(), APPLICATION_STATUS.ACTIVE);
         rppValidationsList.forEach(rppValidation -> {
             Profile profile = new Profile();
             profile.setProfileName(rppValidation.getName());
@@ -615,7 +579,7 @@ public class RPPServiceImpl implements RPPService {
             profile.setStatus(APPLICATION_STATUS.ACTIVE);
             this.profileRepository.save(profile);
         });
-        return new AppResponse(BarcoUtil.SUCCESS, String.format(MessageUtil.DATA_SAVED, ""));
+        return new AppResponse(BarcoUtil.SUCCESS, MessageUtil.FILE_UPLOAD);
     }
 
     /**
@@ -627,15 +591,12 @@ public class RPPServiceImpl implements RPPService {
     @Override
     public AppResponse addPermission(PermissionRequest payload) throws Exception {
         logger.info("Request addPermission :- {}.", payload);
-        AppResponse validationResponse = this.validateUsername(payload);
-        if (!BarcoUtil.isNull(validationResponse)) {
-            return validationResponse;
-        } else if (BarcoUtil.isNull(payload.getPermissionName())) {
-            return new AppResponse(BarcoUtil.ERROR, MessageUtil.PERMISSION_NAME_MISSING, payload);
+        if (BarcoUtil.isNull(payload.getPermissionName())) {
+            return new AppResponse(BarcoUtil.ERROR, MessageUtil.PERMISSION_NAME_MISSING);
         } else if (BarcoUtil.isNull(payload.getDescription())) {
-            return new AppResponse(BarcoUtil.ERROR, MessageUtil.PERMISSION_DESCRIPTION_MISSING, payload);
+            return new AppResponse(BarcoUtil.ERROR, MessageUtil.PERMISSION_DESCRIPTION_MISSING);
         } else if (this.permissionRepository.findPermissionByPermissionName(payload.getPermissionName()).isPresent()) {
-            return new AppResponse(BarcoUtil.ERROR, MessageUtil.PERMISSION_ALREADY_EXIST, payload);
+            return new AppResponse(BarcoUtil.ERROR, MessageUtil.PERMISSION_ALREADY_EXIST);
         }
         Optional<AppUser> appUser = this.appUserRepository.findByUsernameAndStatus(payload.getSessionUser().getUsername(), APPLICATION_STATUS.ACTIVE);
         Permission permission = new Permission();
@@ -645,7 +606,7 @@ public class RPPServiceImpl implements RPPService {
         permission.setUpdatedBy(appUser.get());
         permission.setStatus(APPLICATION_STATUS.ACTIVE);
         this.permissionRepository.save(permission);
-        return new AppResponse(BarcoUtil.SUCCESS, String.format(MessageUtil.DATA_SAVED, permission.getId().toString()), payload);
+        return new AppResponse(BarcoUtil.SUCCESS, String.format(MessageUtil.DATA_SAVED, permission.getUuid()), payload);
     }
 
     /**
@@ -657,22 +618,19 @@ public class RPPServiceImpl implements RPPService {
     @Override
     public AppResponse updatePermission(PermissionRequest payload) throws Exception {
         logger.info("Request updatePermission :- {}.",payload);
-        AppResponse validationResponse = this.validateUsername(payload);
-        if (!BarcoUtil.isNull(validationResponse)) {
-            return validationResponse;
-        } else if (BarcoUtil.isNull(payload.getUuid())) {
-            return new AppResponse(BarcoUtil.ERROR, MessageUtil.PERMISSION_ID_MISSING, payload);
+        if (BarcoUtil.isNull(payload.getUuid())) {
+            return new AppResponse(BarcoUtil.ERROR, MessageUtil.PERMISSION_ID_MISSING);
         } else if (BarcoUtil.isNull(payload.getPermissionName())) {
-            return new AppResponse(BarcoUtil.ERROR, MessageUtil.PERMISSION_NAME_MISSING, payload);
+            return new AppResponse(BarcoUtil.ERROR, MessageUtil.PERMISSION_NAME_MISSING);
         } else if (BarcoUtil.isNull(payload.getDescription())) {
-            return new AppResponse(BarcoUtil.ERROR, MessageUtil.PERMISSION_DESCRIPTION_MISSING, payload);
+            return new AppResponse(BarcoUtil.ERROR, MessageUtil.PERMISSION_DESCRIPTION_MISSING);
         }
         Optional<Permission> permission = this.permissionRepository.findByUuid(payload.getUuid());
         if (permission.isEmpty()) {
-            return new AppResponse(BarcoUtil.ERROR, String.format(MessageUtil.PERMISSION_NOT_FOUND_WITH_ID, payload.getUuid()), payload);
+            return new AppResponse(BarcoUtil.ERROR, String.format(MessageUtil.PERMISSION_NOT_FOUND_WITH_ID, payload.getUuid()));
         } else if (!permission.get().getPermissionName().equals(payload.getPermissionName()) &&
             this.permissionRepository.findPermissionByPermissionName(payload.getPermissionName()).isPresent()) {
-            return new AppResponse(BarcoUtil.ERROR, MessageUtil.PERMISSION_ALREADY_EXIST, payload);
+            return new AppResponse(BarcoUtil.ERROR, MessageUtil.PERMISSION_ALREADY_EXIST);
         }
         permission.get().setPermissionName(payload.getPermissionName());
         if (!BarcoUtil.isNull(payload.getDescription())) {
@@ -683,15 +641,15 @@ public class RPPServiceImpl implements RPPService {
         if (!BarcoUtil.isNull(payload.getStatus())) {
             permission.get().setStatus(APPLICATION_STATUS.getByLookupCode(payload.getStatus()));
             permission.get().getProfilePermissions().stream()
-                .map(profilePermission -> {
-                    profilePermission.setStatus(APPLICATION_STATUS.getByLookupCode(payload.getStatus()));
-                    profilePermission.setUpdatedBy(appUser.get());
-                    return profilePermission;
-                });
+            .map(profilePermission -> {
+                profilePermission.setStatus(APPLICATION_STATUS.getByLookupCode(payload.getStatus()));
+                profilePermission.setUpdatedBy(appUser.get());
+                return profilePermission;
+            });
         }
         permission.get().setUpdatedBy(appUser.get());
         this.permissionRepository.save(permission.get());
-        return new AppResponse(BarcoUtil.SUCCESS, String.format(MessageUtil.DATA_SAVED, permission.get().getId().toString()), payload);
+        return new AppResponse(BarcoUtil.SUCCESS, String.format(MessageUtil.DATA_SAVED, payload.getUuid()), payload);
     }
 
     /**
@@ -717,11 +675,11 @@ public class RPPServiceImpl implements RPPService {
     public AppResponse fetchPermissionById(PermissionRequest payload) throws Exception {
         logger.info("Request fetchPermissionById :- {}.", payload);
         if (BarcoUtil.isNull(payload.getUuid())) {
-            return new AppResponse(BarcoUtil.ERROR, MessageUtil.PERMISSION_ID_MISSING, payload);
+            return new AppResponse(BarcoUtil.ERROR, MessageUtil.PERMISSION_ID_MISSING);
         }
         return this.permissionRepository.findByUuid(payload.getUuid())
             .map(value -> new AppResponse(BarcoUtil.SUCCESS, MessageUtil.DATA_FETCH_SUCCESSFULLY, this.gatePermissionResponse(value)))
-            .orElseGet(() -> new AppResponse(BarcoUtil.ERROR, String.format(MessageUtil.PERMISSION_NOT_FOUND_WITH_ID, payload.getUuid()), payload));
+            .orElseGet(() -> new AppResponse(BarcoUtil.ERROR, String.format(MessageUtil.PERMISSION_NOT_FOUND_WITH_ID, payload.getUuid())));
     }
 
     /**
@@ -734,11 +692,11 @@ public class RPPServiceImpl implements RPPService {
     public AppResponse deletePermissionById(PermissionRequest payload) throws Exception {
         logger.info("Request deletePermissionById :- {}.", payload);
         if (BarcoUtil.isNull(payload.getUuid())) {
-            return new AppResponse(BarcoUtil.ERROR, MessageUtil.PERMISSION_ID_MISSING, payload);
+            return new AppResponse(BarcoUtil.ERROR, MessageUtil.PERMISSION_ID_MISSING);
         }
         Optional<Permission> permission = this.permissionRepository.findByUuid(payload.getUuid());
         if (permission.isEmpty()) {
-            return new AppResponse(BarcoUtil.ERROR, String.format(MessageUtil.PERMISSION_NOT_FOUND_WITH_ID, payload.getUuid()), payload);
+            return new AppResponse(BarcoUtil.ERROR, String.format(MessageUtil.PERMISSION_NOT_FOUND_WITH_ID, payload.getUuid()));
         }
         // delete with permission user
         this.permissionRepository.delete(permission.get());
@@ -781,10 +739,6 @@ public class RPPServiceImpl implements RPPService {
     @Override
     public ByteArrayOutputStream downloadPermission(PermissionRequest payload) throws Exception {
         logger.info("Request downloadPermission :- {}.", payload);
-        AppResponse validationResponse = this.validateUsername(payload);
-        if (!BarcoUtil.isNull(validationResponse)) {
-            throw new Exception(MessageUtil.USERNAME_MISSING);
-        }
         SheetFiled sheetFiled = this.lookupDataCacheService.getSheetFiledMap().get(ExcelUtil.PERMISSION);
         XSSFWorkbook workbook = new XSSFWorkbook();
         this.bulkExcel.setWb(workbook);
@@ -793,18 +747,15 @@ public class RPPServiceImpl implements RPPService {
         AtomicInteger rowCount = new AtomicInteger();
         this.bulkExcel.fillBulkHeader(rowCount.get(), sheetFiled.getColTitle());
         Iterator<Permission> permissions;
-        if (!BarcoUtil.isNull(payload.getIds()) && !payload.getIds().isEmpty()) {
-            permissions = this.permissionRepository.findAllByIdIn(payload.getIds()).iterator();
+        if (!BarcoUtil.isNull(payload.getUuids()) && !payload.getUuids().isEmpty()) {
+            permissions = this.permissionRepository.findAllByUuidIn(payload.getUuids()).iterator();
         } else {
             permissions = this.permissionRepository.findAll().iterator();
         }
         while (permissions.hasNext()) {
             rowCount.getAndIncrement();
             Permission permission = permissions.next();
-            List<String> dataCellValue = new ArrayList<>();
-            dataCellValue.add(permission.getPermissionName());
-            dataCellValue.add(permission.getDescription());
-            this.bulkExcel.fillBulkBody(dataCellValue, rowCount.get());
+            this.bulkExcel.fillBulkBody(List.of(permission.getPermissionName(), permission.getDescription()), rowCount.get());
         }
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         workbook.write(outputStream);
@@ -820,11 +771,8 @@ public class RPPServiceImpl implements RPPService {
     @Override
     public AppResponse uploadPermission(FileUploadRequest payload) throws Exception {
         logger.info("Request for bulk uploading file!");
-        LookupDataRequest lookupDataRequest = new Gson().fromJson((String) payload.getData(), LookupDataRequest.class);
-        AppResponse validationResponse = this.validateUsername(lookupDataRequest);
-        if (!BarcoUtil.isNull(validationResponse)) {
-            throw new Exception(MessageUtil.USERNAME_MISSING);
-        } else if (!payload.getFile().getContentType().equalsIgnoreCase(ExcelUtil.SHEET_TYPE)) {
+        SessionUser sessionUser = (SessionUser) payload.getData();
+        if (!payload.getFile().getContentType().equalsIgnoreCase(ExcelUtil.SHEET_TYPE)) {
             logger.info("File Type {}.", payload.getFile().getContentType());
             return new AppResponse(BarcoUtil.ERROR, MessageUtil.XLSX_FILE_ONLY);
         }
@@ -850,7 +798,7 @@ public class RPPServiceImpl implements RPPService {
                 for (int i = 0; i < sheetFiled.getColTitle().size(); i++) {
                     if (!currentRow.getCell(i).getStringCellValue().equals(sheetFiled.getColTitle().get(i))) {
                         return new AppResponse(BarcoUtil.ERROR, "File at row " + (currentRow.getRowNum() + 1)
-                                + " " + sheetFiled.getColTitle().get(i) + " heading missing.");
+                            + " " + sheetFiled.getColTitle().get(i) + " heading missing.");
                     }
                 }
             } else if (currentRow.getRowNum() > 0) {
@@ -879,7 +827,7 @@ public class RPPServiceImpl implements RPPService {
         if (!errors.isEmpty()) {
             return new AppResponse(BarcoUtil.ERROR, String.format(MessageUtil.TOTAL_INVALID, errors.size()), errors);
         }
-        Optional<AppUser> appUser = this.appUserRepository.findByUsernameAndStatus(lookupDataRequest.getSessionUser().getUsername(), APPLICATION_STATUS.ACTIVE);
+        Optional<AppUser> appUser = this.appUserRepository.findByUsernameAndStatus(sessionUser.getUsername(), APPLICATION_STATUS.ACTIVE);
         rppValidationsList.forEach(rppValidation -> {
             Permission permission = new Permission();
             permission.setPermissionName(rppValidation.getName());
@@ -889,7 +837,7 @@ public class RPPServiceImpl implements RPPService {
             permission.setStatus(APPLICATION_STATUS.ACTIVE);
             this.permissionRepository.save(permission);
         });
-        return new AppResponse(BarcoUtil.SUCCESS, String.format(MessageUtil.DATA_SAVED, ""));
+        return new AppResponse(BarcoUtil.SUCCESS, MessageUtil.FILE_UPLOAD);
     }
 
     /**
@@ -901,19 +849,12 @@ public class RPPServiceImpl implements RPPService {
     @Override
     public AppResponse fetchLinkProfilePermission(LinkPPRequest payload) throws Exception {
         logger.info("Request fetchLinkProfilePermission :- {}.", payload);
-        AppResponse validationResponse = this.validateUsername(payload);
-        if (!BarcoUtil.isNull(validationResponse)) {
-            throw new Exception(MessageUtil.USERNAME_MISSING);
-        }
-        // link with permission user
         CrossTabResponse crossTabResponse = new CrossTabResponse();
-        // profiles
         List<ProfileResponse> profileResponses = new ArrayList<>();
         this.profileRepository.findAll().forEach(profile -> {
             profileResponses.add(getProfileResponse(profile));
         });
         crossTabResponse.setRow(profileResponses);
-        // permission
         List<PermissionResponse> permissionResponses = new ArrayList<>();
         this.permissionRepository.findAll().forEach(permission -> {
             permissionResponses.add(getPermissionResponse(permission));
@@ -961,37 +902,27 @@ public class RPPServiceImpl implements RPPService {
     @Override
     public AppResponse updateLinkProfilePermission(LinkPPRequest payload) throws Exception {
         logger.info("Request updateLinkProfilePermission :- {}.", payload);
-        AppResponse validationResponse = this.validateUsername(payload);
-        if (!BarcoUtil.isNull(validationResponse)) {
-            throw new Exception(MessageUtil.USERNAME_MISSING);
-        } else if (BarcoUtil.isNull(payload.getProfileId())) {
+        if (BarcoUtil.isNull(payload.getProfileUuid())) {
             return new AppResponse(BarcoUtil.ERROR, MessageUtil.PROFILE_ID_MISSING);
-        } else if (BarcoUtil.isNull(payload.getPermissionId())) {
+        } else if (BarcoUtil.isNull(payload.getPermissionUuid())) {
             return new AppResponse(BarcoUtil.ERROR, MessageUtil.PERMISSION_ID_MISSING);
         } else if (BarcoUtil.isNull(payload.getLinked())) {
             return new AppResponse(BarcoUtil.ERROR, MessageUtil.LINKED_MISSING);
         }
+        // validate the profile and permission
+        Profile profile = this.profileRepository.findByUuid(payload.getProfileUuid())
+            .orElseThrow(() -> new NullPointerException(String.format(MessageUtil.PROFILE_NOT_FOUND_WITH_ID, payload.getProfileUuid())));
+        Permission permission = this.permissionRepository.findByUuid(payload.getPermissionUuid())
+            .orElseThrow(() -> new NullPointerException(String.format(MessageUtil.PERMISSION_NOT_FOUND_WITH_ID, payload.getPermissionUuid())));
         // add operation de-link
         if (payload.getLinked()) {
-            Optional<AppUser> appUser = this.appUserRepository.findByUsernameAndStatus(payload.getSessionUser().getUsername(), APPLICATION_STATUS.ACTIVE);
-            ProfilePermission profilePermission = new ProfilePermission();
-            profilePermission.setCreatedBy(appUser.get());
-            profilePermission.setUpdatedBy(appUser.get());
-            profilePermission.setProfile(this.profileRepository.findById(payload.getProfileId())
-                .orElseThrow(() -> new NullPointerException(String.format(MessageUtil.PROFILE_NOT_FOUND_WITH_ID, payload.getProfileId()))));
-            profilePermission.setPermission(this.permissionRepository.findById(payload.getPermissionId())
-                .orElseThrow(() -> new NullPointerException(String.format(MessageUtil.PERMISSION_NOT_FOUND_WITH_ID, payload.getPermissionId()))));
-            profilePermission.setStatus(APPLICATION_STATUS.ACTIVE);
-            if (profilePermission.getProfile().getStatus().equals(APPLICATION_STATUS.INACTIVE) ||
-                profilePermission.getPermission().getStatus().equals(APPLICATION_STATUS.INACTIVE)) {
-                profilePermission.setStatus(APPLICATION_STATUS.INACTIVE);
-            }
-            this.profilePermissionRepository.save(profilePermission);
+            this.profilePermissionRepository.save(getProfilePermission(profile, permission,
+                this.appUserRepository.findByUsernameAndStatus(payload.getSessionUser().getUsername(), APPLICATION_STATUS.ACTIVE).get()));
         } else {
             // delete operation de-link
-            this.queryService.deleteQuery(String.format(QueryService.DELETE_PROFILE_PERMISSION_BY_PROFILE_ID_AND_PERMISSION_ID, payload.getProfileId(), payload.getPermissionId()));
+            this.queryService.deleteQuery(String.format(QueryService.DELETE_PROFILE_PERMISSION_BY_PROFILE_ID_AND_PERMISSION_ID, profile.getId(), permission.getId()));
         }
-        return new AppResponse(BarcoUtil.SUCCESS, String.format(MessageUtil.DATA_UPDATE, ""), payload);
+        return new AppResponse(BarcoUtil.SUCCESS, String.format(MessageUtil.DATA_UPDATE, payload.getProfileUuid().concat("||".concat(payload.getPermissionUuid()))), payload);
     }
 
     /**
@@ -1003,10 +934,7 @@ public class RPPServiceImpl implements RPPService {
     @Override
     public AppResponse fetchLinkRoleWithUser(LinkRURequest payload) throws Exception {
         logger.info("Request fetchLinkRoleWithUser :- {}.", payload);
-        AppResponse validationResponse = this.validateUsername(payload);
-        if (!BarcoUtil.isNull(validationResponse)) {
-            throw new Exception(MessageUtil.USERNAME_MISSING);
-        } else if (BarcoUtil.isNull(payload.getRoleId())) {
+        if (BarcoUtil.isNull(payload.getRoleId())) {
             return new AppResponse(BarcoUtil.ERROR, MessageUtil.ROLE_ID_MISSING);
         }
         Optional<Role> role = this.roleRepository.findById(payload.getRoleId());
@@ -1033,10 +961,7 @@ public class RPPServiceImpl implements RPPService {
     @Override
     public AppResponse linkRoleWithUser(LinkRURequest payload) throws Exception {
         logger.info("Request linkRoleWithUser :- {}.", payload);
-        AppResponse validationResponse = this.validateUsername(payload);
-        if (!BarcoUtil.isNull(validationResponse)) {
-            throw new Exception(MessageUtil.USERNAME_MISSING);
-        } else if (BarcoUtil.isNull(payload.getRoleId())) {
+        if (BarcoUtil.isNull(payload.getRoleId())) {
             return new AppResponse(BarcoUtil.ERROR, MessageUtil.ROLE_ID_MISSING);
         } else if (BarcoUtil.isNull(payload.getAppUserId())) {
             return new AppResponse(BarcoUtil.ERROR, MessageUtil.APP_USER_ID_MISSING);
@@ -1045,11 +970,11 @@ public class RPPServiceImpl implements RPPService {
         }
         Optional<Role> role = this.roleRepository.findById(payload.getRoleId());
         if (role.isEmpty()) {
-            return new AppResponse(BarcoUtil.ERROR, String.format(MessageUtil.ROLE_NOT_FOUND_WITH_ID, payload.getRoleId()), payload);
+            return new AppResponse(BarcoUtil.ERROR, String.format(MessageUtil.ROLE_NOT_FOUND_WITH_ID, payload.getRoleId()));
         }
         Optional<AppUser> appUser = this.appUserRepository.findById(payload.getAppUserId());
         if (appUser.isEmpty()) {
-            return new AppResponse(BarcoUtil.ERROR, String.format(MessageUtil.APPUSER_NOT_FOUND, payload.getAppUserId()), payload);
+            return new AppResponse(BarcoUtil.ERROR, String.format(MessageUtil.APPUSER_NOT_FOUND, payload.getAppUserId()));
         }
         Optional<AppUser> superAdmin = this.appUserRepository.findByUsernameAndStatus(payload.getSessionUser().getUsername(), APPLICATION_STATUS.ACTIVE);
         // add operation de-link
@@ -1071,15 +996,12 @@ public class RPPServiceImpl implements RPPService {
     @Override
     public AppResponse fetchLinkProfileWithUser(LinkPURequest payload) throws Exception {
         logger.info("Request fetchLinkProfileWithUser :- {}.", payload);
-        AppResponse validationResponse = this.validateUsername(payload);
-        if (!BarcoUtil.isNull(validationResponse)) {
-            throw new Exception(MessageUtil.USERNAME_MISSING);
-        } else if (BarcoUtil.isNull(payload.getProfileId())) {
+        if (BarcoUtil.isNull(payload.getProfileId())) {
             return new AppResponse(BarcoUtil.ERROR, MessageUtil.PROFILE_ID_MISSING);
         }
         Optional<Profile> profile = this.profileRepository.findById(payload.getProfileId());
         if (profile.isEmpty()) {
-            return new AppResponse(BarcoUtil.ERROR, String.format(MessageUtil.PROFILE_NOT_FOUND_WITH_ID, payload.getProfileId()), payload);
+            return new AppResponse(BarcoUtil.ERROR, String.format(MessageUtil.PROFILE_NOT_FOUND_WITH_ID, payload.getProfileId()));
         }
         QueryResponse queryResponse = this.queryService.executeQueryResponse(String.format(QueryService.FETCH_LINK_PROFILE_WITH_USER_SUPER_ADMIN_PROFILE_AND_USER_ADMIN_PROFILE,
             profile.get().getId(), APPLICATION_STATUS.DELETE.getLookupCode(), payload.getStartDate().concat(BarcoUtil.START_DATE), payload.getEndDate().concat(BarcoUtil.END_DATE)));
@@ -1101,10 +1023,7 @@ public class RPPServiceImpl implements RPPService {
     @Override
     public AppResponse linkProfileWithUser(LinkPURequest payload) throws Exception {
         logger.info("Request linkProfileWithUser :- {}.", payload);
-        AppResponse validationResponse = this.validateUsername(payload);
-        if (!BarcoUtil.isNull(validationResponse)) {
-            throw new Exception(MessageUtil.USERNAME_MISSING);
-        } else if (BarcoUtil.isNull(payload.getProfileId())) {
+        if (BarcoUtil.isNull(payload.getProfileId())) {
             return new AppResponse(BarcoUtil.ERROR, MessageUtil.PROFILE_ID_MISSING);
         } else if (BarcoUtil.isNull(payload.getAppUserId())) {
             return new AppResponse(BarcoUtil.ERROR, MessageUtil.APP_USER_ID_MISSING);
@@ -1113,11 +1032,11 @@ public class RPPServiceImpl implements RPPService {
         }
         Optional<Profile> profile = this.profileRepository.findById(payload.getProfileId());
         if (profile.isEmpty()) {
-            return new AppResponse(BarcoUtil.ERROR, String.format(MessageUtil.PROFILE_NOT_FOUND_WITH_ID, payload.getProfileId()), payload);
+            return new AppResponse(BarcoUtil.ERROR, String.format(MessageUtil.PROFILE_NOT_FOUND_WITH_ID, payload.getProfileId()));
         }
         Optional<AppUser> appUser = this.appUserRepository.findById(payload.getAppUserId());
         if (appUser.isEmpty()) {
-            return new AppResponse(BarcoUtil.ERROR, String.format(MessageUtil.APPUSER_NOT_FOUND, payload.getAppUserId()), payload);
+            return new AppResponse(BarcoUtil.ERROR, String.format(MessageUtil.APPUSER_NOT_FOUND, payload.getAppUserId()));
         }
         Optional<AppUser> superAdmin = this.appUserRepository.findByUsernameAndStatus(payload.getSessionUser().getUsername(), APPLICATION_STATUS.ACTIVE);
         if (payload.getLinked()) {
@@ -1139,10 +1058,6 @@ public class RPPServiceImpl implements RPPService {
     @Override
     public AppResponse fetchProfileWithUser(ProfileRequest payload) throws Exception {
         logger.info("Request fetchProfileWithUser :- {}.", payload);
-        AppResponse validationResponse = this.validateUsername(payload);
-        if (!BarcoUtil.isNull(validationResponse)) {
-            throw new Exception(MessageUtil.USERNAME_MISSING);
-        }
         Optional<AppUser> appUser = this.appUserRepository.findByUsernameAndStatus(payload.getSessionUser().getUsername(), APPLICATION_STATUS.ACTIVE);
         QueryResponse queryResponse = this.queryService.executeQueryResponse(String.format(QueryService.FETCH_PROFILE_WITH_USER, appUser.get().getId(),
             APPLICATION_STATUS.ACTIVE.getLookupCode(), APPLICATION_STATUS.ACTIVE.getLookupCode()));
@@ -1165,10 +1080,6 @@ public class RPPServiceImpl implements RPPService {
     @Override
     public AppResponse fetchRoleWithUser(RoleRequest payload) throws Exception {
         logger.info("Request fetchRoleWithUser :- {}.", payload);
-        AppResponse validationResponse = this.validateUsername(payload);
-        if (!BarcoUtil.isNull(validationResponse)) {
-            throw new Exception(MessageUtil.USERNAME_MISSING);
-        }
         Optional<AppUser> appUser = this.appUserRepository.findByUsernameAndStatus(payload.getSessionUser().getUsername(), APPLICATION_STATUS.ACTIVE);
         QueryResponse queryResponse = this.queryService.executeQueryResponse(String.format(QueryService.FETCH_ROLE_WITH_USER, appUser.get().getId(),
             APPLICATION_STATUS.ACTIVE.getLookupCode(), APPLICATION_STATUS.ACTIVE.getLookupCode()));
@@ -1180,80 +1091,6 @@ public class RPPServiceImpl implements RPPService {
             }
         }
         return new AppResponse(BarcoUtil.SUCCESS, MessageUtil.DATA_FETCH_SUCCESSFULLY, roleResponses);
-    }
-
-    /**
-     * Method use to convert the profile to profile response
-     * @param profile
-     * @return ProfileResponse
-     * */
-    private ProfileResponse getProfileResponse(Profile profile) {
-        ProfileResponse profileResponse = new ProfileResponse();
-        profileResponse.setUuid(profile.getUuid());
-        profileResponse.setProfileName(profile.getProfileName());
-        profileResponse.setDescription(profile.getDescription());
-        profileResponse.setStatus(APPLICATION_STATUS.getStatusByLookupType(profile.getStatus().getLookupType()));
-        return profileResponse;
-    }
-
-    /**
-     * Method use to convert the permission to permission response
-     * @param permission
-     * @return ProfileResponse
-     * */
-    private PermissionResponse getPermissionResponse(Permission permission) {
-        PermissionResponse permissionResponse = new PermissionResponse();
-        permissionResponse.setUuid(permission.getUuid());
-        permissionResponse.setPermissionName(permission.getPermissionName());
-        permissionResponse.setDescription(permission.getDescription());
-        permissionResponse.setStatus(APPLICATION_STATUS.getStatusByLookupType(permission.getStatus().getLookupType()));
-        return permissionResponse;
-    }
-
-    /**
-     * Method used to validate the username.
-     * @param payload
-     * @return AppResponse
-     */
-    private AppResponse validateUsername(Object payload) {
-        SessionUser sessionUser = null;
-        // Check if the payload is an instance of RoleRequest or other types
-        if (payload instanceof RoleRequest) {
-            RoleRequest roleRequest = (RoleRequest) payload;
-            sessionUser = roleRequest.getSessionUser();
-        } else if (payload instanceof ProfileRequest) {
-            ProfileRequest profileRequest = (ProfileRequest) payload;
-            sessionUser = profileRequest.getSessionUser();
-        } else if (payload instanceof PermissionRequest) {
-            PermissionRequest permissionRequest = (PermissionRequest) payload;
-            sessionUser = permissionRequest.getSessionUser();
-        } else if (payload instanceof LinkPPRequest) {
-            LinkPPRequest linkPPRequest = (LinkPPRequest) payload;
-            sessionUser = linkPPRequest.getSessionUser();
-        } else if (payload instanceof LinkRURequest) {
-            LinkRURequest linkRURequest = (LinkRURequest) payload;
-            sessionUser = linkRURequest.getSessionUser();
-        } else if (payload instanceof LinkPURequest) {
-            LinkPURequest linkPURequest = (LinkPURequest) payload;
-            sessionUser = linkPURequest.getSessionUser();
-        } else if (payload instanceof LookupDataRequest) {
-            LookupDataRequest lookupDataRequest = (LookupDataRequest) payload;
-            sessionUser = lookupDataRequest.getSessionUser();
-        } else {
-            return new AppResponse(BarcoUtil.ERROR, MessageUtil.INVALID_PAYLOAD_TYPE);
-        }
-        // Ensure sessionUser is not null
-        if (BarcoUtil.isNull(sessionUser)) {
-            return new AppResponse(BarcoUtil.ERROR, MessageUtil.SESSION_USER_MISSING);
-        } else if (BarcoUtil.isNull(sessionUser.getUsername())) {
-            // Check if the username is null or empty
-            return new AppResponse(BarcoUtil.ERROR, MessageUtil.USERNAME_MISSING);
-        } else if (this.appUserRepository.findByUsernameAndStatus(sessionUser.getUsername(), APPLICATION_STATUS.ACTIVE).isEmpty()) {
-            // Check if the username exists and has an active status
-            return new AppResponse(BarcoUtil.ERROR, MessageUtil.APPUSER_NOT_FOUND);
-        }
-        // Username is valid
-        return (AppResponse) BarcoUtil.NULL;
     }
 
 }

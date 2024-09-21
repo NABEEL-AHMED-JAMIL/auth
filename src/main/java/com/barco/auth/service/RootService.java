@@ -727,6 +727,48 @@ public interface RootService {
         return eventBridgeResponse;
     }
 
+    public default ProfilePermission getProfilePermission(Profile profile, Permission permission, AppUser appUser) {
+        ProfilePermission profilePermission = new ProfilePermission();
+        profilePermission.setProfile(profile);
+        profilePermission.setPermission(permission);
+        profilePermission.setStatus(APPLICATION_STATUS.ACTIVE);
+        if (profilePermission.getProfile().getStatus().equals(APPLICATION_STATUS.INACTIVE) ||
+            profilePermission.getPermission().getStatus().equals(APPLICATION_STATUS.INACTIVE)) {
+            profilePermission.setStatus(APPLICATION_STATUS.INACTIVE);
+        }
+        profilePermission.setCreatedBy(appUser);
+        profilePermission.setUpdatedBy(appUser);
+        return profilePermission;
+    }
+
+    /**
+     * Method use to convert the profile to profile response
+     * @param profile
+     * @return ProfileResponse
+     * */
+    public default ProfileResponse getProfileResponse(Profile profile) {
+        ProfileResponse profileResponse = new ProfileResponse();
+        profileResponse.setUuid(profile.getUuid());
+        profileResponse.setProfileName(profile.getProfileName());
+        profileResponse.setDescription(profile.getDescription());
+        profileResponse.setStatus(APPLICATION_STATUS.getStatusByLookupType(profile.getStatus().getLookupType()));
+        return profileResponse;
+    }
+
+    /**
+     * Method use to convert the permission to permission response
+     * @param permission
+     * @return ProfileResponse
+     * */
+    public default PermissionResponse getPermissionResponse(Permission permission) {
+        PermissionResponse permissionResponse = new PermissionResponse();
+        permissionResponse.setUuid(permission.getUuid());
+        permissionResponse.setPermissionName(permission.getPermissionName());
+        permissionResponse.setDescription(permission.getDescription());
+        permissionResponse.setStatus(APPLICATION_STATUS.getStatusByLookupType(permission.getStatus().getLookupType()));
+        return permissionResponse;
+    }
+
     /**
      * Method use to validate the link EventBridge payload
      * @param payload
