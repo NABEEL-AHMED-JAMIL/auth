@@ -472,7 +472,7 @@ public class AppUserServiceImpl implements AppUserService {
             this.sendNotification(MessageUtil.ACCOUNT_STATUS, String.format(MessageUtil.ACCOUNT_DELETE_DETAIL,
                  appUser.getUsername()), adminUser.get(), this.lookupDataCacheService, this.notificationService);
         }
-        return new AppResponse(BarcoUtil.SUCCESS, String.format(MessageUtil.DATA_DELETED, ""), payload);
+        return new AppResponse(BarcoUtil.SUCCESS, MessageUtil.DATA_DELETED_ALL, payload);
     }
 
     /**
@@ -487,18 +487,17 @@ public class AppUserServiceImpl implements AppUserService {
         if (BarcoUtil.isNull(payload.getSessionUser().getUsername())) {
             return new AppResponse(BarcoUtil.ERROR, MessageUtil.USERNAME_MISSING);
         }
-        Optional<AppUser> adminUser = this.appUserRepository.findByUsernameAndStatus(
-                payload.getSessionUser().getUsername(), APPLICATION_STATUS.ACTIVE);
+        Optional<AppUser> adminUser = this.appUserRepository.findByUsernameAndStatus(payload.getSessionUser().getUsername(), APPLICATION_STATUS.ACTIVE);
         if (adminUser.isEmpty()) {
             return new AppResponse(BarcoUtil.ERROR, MessageUtil.APPUSER_NOT_FOUND);
         }
-        if (BarcoUtil.isNull(payload.getId())) {
+        if (BarcoUtil.isNull(payload.getUuid())) {
             return new AppResponse(BarcoUtil.ERROR, MessageUtil.ID_MISSING);
         } else if (BarcoUtil.isNull(payload.getStatus())) {
             return new AppResponse(BarcoUtil.ERROR, MessageUtil.APPLICATION_STATUS_NOT_FOUND);
         }
         // check the access for role and profile for user creating
-        Optional<AppUser> appUser = this.appUserRepository.findById(payload.getId());
+        Optional<AppUser> appUser = this.appUserRepository.findByUuidAndStatusNot(payload.getUuid(), APPLICATION_STATUS.DELETE);
         if (!BarcoUtil.isNull(payload.getStatus())) {
             // if status is in-active & delete then we have filter the role and show only those role in user detail
             appUser.get().setUpdatedBy(adminUser.get());

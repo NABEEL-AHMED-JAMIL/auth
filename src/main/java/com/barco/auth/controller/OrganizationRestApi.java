@@ -4,9 +4,7 @@ import com.barco.auth.service.OrganizationService;
 import com.barco.common.utility.BarcoUtil;
 import com.barco.common.utility.ExceptionUtil;
 import com.barco.model.dto.request.OrganizationRequest;
-import com.barco.model.dto.request.SessionUser;
 import com.barco.model.dto.response.AppResponse;
-import com.barco.model.security.UserSessionDetail;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import org.slf4j.Logger;
@@ -26,7 +24,7 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping(value = "/organization.json")
 @Api(value = "Organization Rest Api",
     description = "Organization Service : Service use to create the private org main account [admin role & client type].")
-public class OrganizationRestApi {
+public class OrganizationRestApi extends RootRestApi {
 
     private Logger logger = LoggerFactory.getLogger(OrganizationRestApi.class);
 
@@ -44,8 +42,7 @@ public class OrganizationRestApi {
     @RequestMapping(value="/addOrgAccount", method= RequestMethod.POST)
     public ResponseEntity<?> addOrgAccount(@RequestBody OrganizationRequest payload) {
         try {
-            UserSessionDetail userSessionDetail = (UserSessionDetail) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-            payload.setSessionUser(new SessionUser(userSessionDetail.getId(), userSessionDetail.getEmail(), userSessionDetail.getUsername()));
+            payload.setSessionUser(this.getSessionUser());
             return new ResponseEntity<>(this.organizationService.addOrgAccount(payload), HttpStatus.OK);
         } catch (Exception ex) {
             logger.error("An error occurred while addOrgAccount ", ExceptionUtil.getRootCause(ex));
@@ -64,8 +61,7 @@ public class OrganizationRestApi {
     @RequestMapping(value="/updateOrgAccount", method= RequestMethod.POST)
     public ResponseEntity<?> updateOrgAccount(@RequestBody OrganizationRequest payload) {
         try {
-            UserSessionDetail userSessionDetail = (UserSessionDetail) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-            payload.setSessionUser(new SessionUser(userSessionDetail.getId(), userSessionDetail.getEmail(), userSessionDetail.getUsername()));
+            payload.setSessionUser(this.getSessionUser());
             return new ResponseEntity<>(this.organizationService.updateOrgAccount(payload), HttpStatus.OK);
         } catch (Exception ex) {
             logger.error("An error occurred while updateOrgAccount ", ExceptionUtil.getRootCause(ex));
@@ -84,6 +80,7 @@ public class OrganizationRestApi {
     @RequestMapping(value="/fetchOrgAccountById", method= RequestMethod.POST)
     public ResponseEntity<?> fetchOrgAccountById(@RequestBody OrganizationRequest payload) {
         try {
+            payload.setSessionUser(this.getSessionUser());
             return new ResponseEntity<>(this.organizationService.fetchOrgAccountById(payload), HttpStatus.OK);
         } catch (Exception ex) {
             logger.error("An error occurred while fetchOrgAccountById ", ExceptionUtil.getRootCause(ex));
@@ -102,6 +99,7 @@ public class OrganizationRestApi {
     @RequestMapping(value="/fetchAllOrgAccount", method= RequestMethod.POST)
     public ResponseEntity<?> fetchAllOrgAccount(@RequestBody OrganizationRequest payload) {
         try {
+            payload.setSessionUser(this.getSessionUser());
             return new ResponseEntity<>(this.organizationService.fetchAllOrgAccount(payload), HttpStatus.OK);
         } catch (Exception ex) {
             logger.error("An error occurred while fetchAllOrgAccount ", ExceptionUtil.getRootCause(ex));
@@ -120,6 +118,7 @@ public class OrganizationRestApi {
     @RequestMapping(value="/deleteOrgAccountById", method= RequestMethod.POST)
     public ResponseEntity<?> deleteOrgAccountById(@RequestBody OrganizationRequest payload) {
         try {
+            payload.setSessionUser(this.getSessionUser());
             return new ResponseEntity<>(this.organizationService.deleteOrgAccountById(payload), HttpStatus.OK);
         } catch (Exception ex) {
             logger.error("An error occurred while deleteOrgAccountById ", ExceptionUtil.getRootCause(ex));
@@ -138,6 +137,7 @@ public class OrganizationRestApi {
     @RequestMapping(value="/deleteAllOrgAccount", method= RequestMethod.POST)
     public ResponseEntity<?> deleteAllOrgAccount(@RequestBody OrganizationRequest payload) {
         try {
+            payload.setSessionUser(this.getSessionUser());
             return new ResponseEntity<>(this.organizationService.deleteAllOrgAccount(payload), HttpStatus.OK);
         } catch (Exception ex) {
             logger.error("An error occurred while deleteAllOrgAccount ", ExceptionUtil.getRootCause(ex));

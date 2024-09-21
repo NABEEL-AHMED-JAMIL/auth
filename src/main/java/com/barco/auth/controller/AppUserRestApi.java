@@ -6,10 +6,8 @@ import com.barco.common.utility.ExceptionUtil;
 import com.barco.common.utility.excel.ExcelUtil;
 import com.barco.model.dto.request.AppUserRequest;
 import com.barco.model.dto.request.EnVariablesRequest;
-import com.barco.model.dto.request.SessionUser;
 import com.barco.model.dto.request.UpdateUserProfileRequest;
 import com.barco.model.dto.response.AppResponse;
-import com.barco.model.security.UserSessionDetail;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import org.slf4j.Logger;
@@ -35,7 +33,7 @@ import java.util.UUID;
 @RequestMapping(value = "/appUser.json")
 @Api(value = "App Rest Api",
    description = "AppUser Service : Service related to the user management.")
-public class AppUserRestApi {
+public class AppUserRestApi extends RootRestApi {
 
     private Logger logger = LoggerFactory.getLogger(AppUserRestApi.class);
 
@@ -69,8 +67,7 @@ public class AppUserRestApi {
     @RequestMapping(value = "/updateAppUserEnvVariable", method = RequestMethod.POST)
     public ResponseEntity<?> updateAppUserEnvVariable(@RequestBody EnVariablesRequest payload) {
         try {
-            UserSessionDetail userSessionDetail = (UserSessionDetail) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-            payload.setSessionUser(new SessionUser(userSessionDetail.getUuid(), userSessionDetail.getEmail(), userSessionDetail.getUsername()));
+            payload.setSessionUser(this.getSessionUser());
             return new ResponseEntity<>(this.appUserService.updateAppUserEnvVariable(payload), HttpStatus.OK);
         } catch (Exception ex) {
             logger.error("An error occurred while updateAppUserEnvVariable ", ExceptionUtil.getRootCause(ex));
@@ -88,8 +85,7 @@ public class AppUserRestApi {
     @RequestMapping(value = "/updateAppUserPassword", method = RequestMethod.POST)
     public ResponseEntity<?> updateAppUserPassword(@RequestBody UpdateUserProfileRequest payload) {
         try {
-            UserSessionDetail userSessionDetail = (UserSessionDetail) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-            payload.setSessionUser(new SessionUser(userSessionDetail.getUuid(), userSessionDetail.getEmail(), userSessionDetail.getUsername()));
+            payload.setSessionUser(this.getSessionUser());
             return new ResponseEntity<>(this.appUserService.updateAppUserPassword(payload), HttpStatus.OK);
         } catch (Exception ex) {
             logger.error("An error occurred while updateAppUserPassword ", ExceptionUtil.getRootCause(ex));
@@ -109,8 +105,7 @@ public class AppUserRestApi {
     public ResponseEntity<?> addAppUserAccount(@RequestBody AppUserRequest payload) {
         try {
             // user session detail
-            UserSessionDetail userSessionDetail = (UserSessionDetail) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-            payload.setSessionUser(new SessionUser(userSessionDetail.getUuid(), userSessionDetail.getEmail(), userSessionDetail.getUsername()));
+            payload.setSessionUser(this.getSessionUser());
             return new ResponseEntity<>(this.appUserService.addAppUserAccount(payload), HttpStatus.OK);
         } catch (Exception ex) {
             logger.error("An error occurred while addAppUserAccount ", ExceptionUtil.getRootCause(ex));
@@ -130,8 +125,7 @@ public class AppUserRestApi {
     public ResponseEntity<?> updateAppUserAccount(@RequestBody AppUserRequest payload) {
         try {
             // user session detail
-            UserSessionDetail userSessionDetail = (UserSessionDetail) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-            payload.setSessionUser(new SessionUser(userSessionDetail.getUuid(), userSessionDetail.getEmail(), userSessionDetail.getUsername()));
+            payload.setSessionUser(this.getSessionUser());
             return new ResponseEntity<>(this.appUserService.updateAppUserAccount(payload), HttpStatus.OK);
         } catch (Exception ex) {
             logger.error("An error occurred while updateAppUserAccount ", ExceptionUtil.getRootCause(ex));
@@ -205,8 +199,7 @@ public class AppUserRestApi {
     public ResponseEntity<?> enabledDisabledAppUserAccount(@RequestBody AppUserRequest payload) {
         try {
             // user session detail
-            UserSessionDetail userSessionDetail = (UserSessionDetail) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-            payload.setSessionUser(new SessionUser(userSessionDetail.getUuid(), userSessionDetail.getEmail(), userSessionDetail.getUsername()));
+            payload.setSessionUser(this.getSessionUser());
             return new ResponseEntity<>(this.appUserService.enabledDisabledAppUserAccount(payload), HttpStatus.OK);
         } catch (Exception ex) {
             logger.error("An error occurred while enabledDisabledAppUserAccount ", ExceptionUtil.getRootCause(ex));
