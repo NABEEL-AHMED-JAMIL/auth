@@ -77,7 +77,7 @@ public class OrganizationServiceImpl implements OrganizationService {
     @Override
     public AppResponse addOrgAccount(OrganizationRequest payload) throws Exception {
         logger.info("Request addOrgAccount :- {}.", payload);
-        AppResponse validationResponse = this.validateAddOrgAccountPayload(payload);
+        AppResponse validationResponse = this.validateOrgAccountPayload(payload);
         if (!BarcoUtil.isNull(validationResponse)) {
             return validationResponse;
         }
@@ -125,26 +125,26 @@ public class OrganizationServiceImpl implements OrganizationService {
                 this.appUserEnvRepository.save(this.getAppUserEnv(adminUser.get(), orgAppUser, envVariables));
             });
             // event bridge only receiver event bridge if exist and create by the main user
-            this.eventBridgeRepository.findAllByBridgeTypeInAndCreatedByAndStatusNotOrderByDateCreatedDesc(List.of(EVENT_BRIDGE_TYPE.WEB_HOOK_RECEIVE),
-                superAdmin.get(), APPLICATION_STATUS.DELETE).forEach(eventBridge -> {
-                    try {
-                        LinkEBURequest linkEBURequest = new LinkEBURequest();
-                        linkEBURequest.setId(eventBridge.getId());
-                        linkEBURequest.setAppUserId(orgAppUser.getId());
-                        linkEBURequest.setLinked(Boolean.TRUE);
-                        linkEBURequest.setSessionUser(new SessionUser(superAdmin.get().getUsername()));
-                        this.eventBridgeService.linkEventBridgeWithUser(linkEBURequest);
-                    } catch (Exception ex) {
-                        throw new RuntimeException(ex);
-                    }
-                });
+            this.eventBridgeRepository.findAllByBridgeTypeInAndCreatedByAndStatusNotOrderByDateCreatedDesc(List.of(EVENT_BRIDGE_TYPE.WEB_HOOK_RECEIVE), superAdmin.get(), APPLICATION_STATUS.DELETE)
+            .forEach(eventBridge -> {
+                try {
+                    LinkEBURequest linkEBURequest = new LinkEBURequest();
+                    linkEBURequest.setId(eventBridge.getId());
+                    linkEBURequest.setAppUserId(orgAppUser.getId());
+                    linkEBURequest.setLinked(Boolean.TRUE);
+                    linkEBURequest.setSessionUser(new SessionUser(superAdmin.get().getUsername()));
+                    this.eventBridgeService.linkEventBridgeWithUser(linkEBURequest);
+                } catch (Exception ex) {
+                    throw new RuntimeException(ex);
+                }
+            });
         }
         // email send to the admin
         this.sendNotification(MessageUtil.NEW_ORG_ACCOUNT_ADDED, String.format(MessageUtil.NEW_ORG_USER_REGISTER_WITH_ID,
             orgAppUser.getId()), adminUser.get(), this.lookupDataCacheService, this.notificationService);
         // email send to the user
         this.sendRegisterOrgAccountUserEmail(orgAppUser, this.lookupDataCacheService, this.templateRegRepository, this.emailMessagesFactory);
-        return new AppResponse(BarcoUtil.SUCCESS, String.format(MessageUtil.DATA_SAVED, orgAppUser.getOrganization().getId()), payload);
+        return new AppResponse(BarcoUtil.SUCCESS, String.format(MessageUtil.DATA_SAVED, orgAppUser.getOrganization().getUuid()), payload);
     }
 
     /**
@@ -158,22 +158,21 @@ public class OrganizationServiceImpl implements OrganizationService {
     @Override
     public AppResponse updateOrgAccount(OrganizationRequest payload) throws Exception {
         logger.info("Request updateOrgAccount :- {}.", payload);
-        AppResponse validationResponse = this.validateUpdateOrgAccountPayload(payload);
+        AppResponse validationResponse = this.validateOrgAccountPayload(payload);
         if (!BarcoUtil.isNull(validationResponse)) {
             return validationResponse;
-        } else if (!BarcoUtil.isNull(payload.getId())) {
+        } else if (!BarcoUtil.isNull(payload.getUuid())) {
             return new AppResponse(BarcoUtil.ERROR, MessageUtil.ID_MISSING);
         }
-        Optional<Organization> organizationOpt = this.organizationRepository.findByIdAndStatusNot(payload.getId(), APPLICATION_STATUS.DELETE);
+        Optional<Organization> organizationOpt = this.organizationRepository.findByUuidAndStatusNot(payload.getUuid(), APPLICATION_STATUS.DELETE);
         if (organizationOpt.isEmpty()) {
             return new AppResponse(BarcoUtil.ERROR, MessageUtil.ORG_NOT_FOUND);
         }
-        this.organizationRepository.save(this.updateOrganizationFromPayload(organizationOpt.get(), payload));
         // check the access for role and profile for user creating
         Optional<AppUser> adminUser = this.appUserRepository.findByUsernameAndStatus(payload.getSessionUser().getUsername(), APPLICATION_STATUS.ACTIVE);
         // org app user
         AppUserRequest orgAppUserRequest = payload.getUser();
-        Optional<AppUser> orgAppUser = this.appUserRepository.findByIdAndStatusNot(orgAppUserRequest.getId(), APPLICATION_STATUS.DELETE);
+        Optional<AppUser> orgAppUser = this.appUserRepository.findByUuidAndStatusNot(orgAppUserRequest.getUuid(), APPLICATION_STATUS.DELETE);
         if (!BarcoUtil.isNull(orgAppUserRequest.getFirstName())) {
             orgAppUser.get().setFirstName(orgAppUserRequest.getFirstName());
         }
@@ -200,7 +199,8 @@ public class OrganizationServiceImpl implements OrganizationService {
         }
         adminUser.ifPresent(user -> orgAppUser.get().setUpdatedBy(user));
         this.appUserRepository.save(orgAppUser.get());
-        return new AppResponse(BarcoUtil.SUCCESS, String.format(MessageUtil.DATA_UPDATE, payload.getId()), payload);
+        this.organizationRepository.save(this.updateOrganizationFromPayload(organizationOpt.get(), payload));
+        return new AppResponse(BarcoUtil.SUCCESS, String.format(MessageUtil.DATA_UPDATE, payload.getUuid()), payload);
     }
 
     /**
@@ -212,13 +212,12 @@ public class OrganizationServiceImpl implements OrganizationService {
     @Override
     public AppResponse fetchOrgAccountById(OrganizationRequest payload) throws Exception {
         logger.info("Request fetchOrgAccountById :- {}.", payload);
-        AppResponse usernameExist = this.isUsernameAndIdExist(payload);
-        if (!BarcoUtil.isNull(usernameExist)) {
-            return usernameExist;
+        if (!BarcoUtil.isNull(payload.getUuid())) {
+            return new AppResponse(BarcoUtil.ERROR, MessageUtil.ID_MISSING);
         }
-        return this.organizationRepository.findByIdAndStatusNot(payload.getId(), APPLICATION_STATUS.DELETE)
+        return this.organizationRepository.findByUuidAndStatusNot(payload.getUuid(), APPLICATION_STATUS.DELETE)
             .map(organization -> new AppResponse(BarcoUtil.SUCCESS, MessageUtil.DATA_FETCH_SUCCESSFULLY, this.getOrganizationResponse(organization)))
-            .orElseGet(() -> new AppResponse(BarcoUtil.ERROR, MessageUtil.TEMPLATE_REG_NOT_FOUND));
+            .orElseGet(() -> new AppResponse(BarcoUtil.ERROR, MessageUtil.ORG_NOT_FOUND));
     }
 
     /**
@@ -230,10 +229,6 @@ public class OrganizationServiceImpl implements OrganizationService {
     @Override
     public AppResponse fetchAllOrgAccount(OrganizationRequest payload) throws Exception {
         logger.info("Request fetchAllOrgAccount :- {}.", payload);
-        AppResponse validationResponse = this.validateUsername(payload);
-        if (!BarcoUtil.isNull(validationResponse)) {
-            return validationResponse;
-        }
         return new AppResponse(BarcoUtil.SUCCESS, MessageUtil.DATA_FETCH_SUCCESSFULLY,
             this.organizationRepository.findAllByStatusNotOrderByDateCreatedDesc(APPLICATION_STATUS.DELETE).stream()
                 .map(this::getOrganizationResponse).collect(Collectors.toList()));
@@ -248,9 +243,8 @@ public class OrganizationServiceImpl implements OrganizationService {
     @Override
     public AppResponse deleteOrgAccountById(OrganizationRequest payload) throws Exception {
         logger.info("Request deleteOrgAccountById :- {}.", payload);
-        AppResponse usernameExist = this.isUsernameAndIdExist(payload);
-        if (!BarcoUtil.isNull(usernameExist)) {
-            return usernameExist;
+        if (BarcoUtil.isNull(payload.getId())) {
+            return new AppResponse(BarcoUtil.ERROR, MessageUtil.ID_MISSING);
         }
         // need to call the sp
         Optional<Organization> organization = this.organizationRepository.findByIdAndStatusNot(payload.getId(), APPLICATION_STATUS.DELETE);
@@ -270,10 +264,7 @@ public class OrganizationServiceImpl implements OrganizationService {
     @Override
     public AppResponse deleteAllOrgAccount(OrganizationRequest payload) throws Exception {
         logger.info("Request deleteAllOrgAccount :- {}.", payload);
-        AppResponse validationResponse = this.validateUsername(payload);
-        if (!BarcoUtil.isNull(validationResponse)) {
-            return validationResponse;
-        } else if (BarcoUtil.isNull(payload.getIds())) {
+        if (BarcoUtil.isNull(payload.getIds())) {
             return new AppResponse(BarcoUtil.ERROR, MessageUtil.IDS_MISSING);
         }
         // need to call the sp
@@ -288,7 +279,7 @@ public class OrganizationServiceImpl implements OrganizationService {
      * @return AppResponse
      * @throws Exception
      * */
-    private AppResponse validateAddOrgAccountPayload(OrganizationRequest payload) throws Exception {
+    private AppResponse validateOrgAccountPayload(OrganizationRequest payload) throws Exception {
         if (BarcoUtil.isNull(payload.getName())) {
             return new AppResponse(BarcoUtil.ERROR, MessageUtil.ORG_NAME_MISSING);
         } else if (BarcoUtil.isNull(payload.getPhone())) {
@@ -323,77 +314,6 @@ public class OrganizationServiceImpl implements OrganizationService {
             return new AppResponse(BarcoUtil.ERROR, MessageUtil.PROFILE_MISSING);
         } else if (BarcoUtil.isNull(user.getAccountType())) {
             return new AppResponse(BarcoUtil.ERROR, MessageUtil.PROFILE_ACCOUNT_TYPE_MISSING);
-        }
-        return (AppResponse) BarcoUtil.NULL;
-    }
-
-    /**
-     * Method use to validate the payload
-     * @param payload
-     * @return AppResponse
-     * @throws Exception
-     * */
-    private AppResponse validateUpdateOrgAccountPayload(OrganizationRequest payload) throws Exception {
-        if (BarcoUtil.isNull(payload.getName())) {
-            return new AppResponse(BarcoUtil.ERROR, MessageUtil.ORG_NAME_MISSING);
-        } else if (BarcoUtil.isNull(payload.getPhone())) {
-            return new AppResponse(BarcoUtil.ERROR, MessageUtil.ORG_PHONE_MISSING);
-        } else if (BarcoUtil.isNull(payload.getCountryCode())) {
-            return new AppResponse(BarcoUtil.ERROR, MessageUtil.ORG_COUNTRY_CODE_MISSING);
-        } else if (BarcoUtil.isNull(payload.getAddress())) {
-            return new AppResponse(BarcoUtil.ERROR, MessageUtil.ORG_ADDRESS_MISSING);
-        }
-        AppUserRequest user = payload.getUser();
-        if (BarcoUtil.isNull(payload.getId())) {
-            return new AppResponse(BarcoUtil.ERROR, MessageUtil.ID_MISSING);
-        } else if (BarcoUtil.isNull(user.getFirstName())) {
-            return new AppResponse(BarcoUtil.ERROR, MessageUtil.FIRST_NAME_MISSING);
-        } else if (BarcoUtil.isNull(user.getLastName())) {
-            return new AppResponse(BarcoUtil.ERROR, MessageUtil.LAST_NAME_MISSING);
-        } else if (BarcoUtil.isNull(user.getUsername())) {
-            return new AppResponse(BarcoUtil.ERROR, MessageUtil.USERNAME_MISSING);
-        } else if (BarcoUtil.isNull(user.getEmail())) {
-            return new AppResponse(BarcoUtil.ERROR, MessageUtil.EMAIL_MISSING);
-        } else if (BarcoUtil.isNull(user.getIpAddress())) {
-            return new AppResponse(BarcoUtil.ERROR, MessageUtil.IP_ADDRESS_MISSING);
-        } else if (BarcoUtil.isNull(user.getAssignRole())) {
-            return new AppResponse(BarcoUtil.ERROR, MessageUtil.ROLE_MISSING);
-        } else if (BarcoUtil.isNull(user.getProfile())) {
-            return new AppResponse(BarcoUtil.ERROR, MessageUtil.PROFILE_MISSING);
-        } else if (BarcoUtil.isNull(user.getAccountType())) {
-            return new AppResponse(BarcoUtil.ERROR, MessageUtil.PROFILE_ACCOUNT_TYPE_MISSING);
-        }
-        return (AppResponse) BarcoUtil.NULL;
-    }
-
-    /**
-     * Method use to validate the username
-     * @param payload
-     * @return AppResponse
-     * @throws Exception
-     * */
-    private AppResponse validateUsername(OrganizationRequest payload) throws Exception {
-        if (BarcoUtil.isNull(payload.getSessionUser().getUsername())) {
-            return new AppResponse(BarcoUtil.ERROR, MessageUtil.USERNAME_MISSING);
-        } else if (this.appUserRepository.findByUsernameAndStatus(payload.getSessionUser().getUsername(), APPLICATION_STATUS.ACTIVE).isEmpty()) {
-            return new AppResponse(BarcoUtil.ERROR, MessageUtil.APPUSER_NOT_FOUND);
-        }
-        return (AppResponse) BarcoUtil.NULL;
-    }
-
-    /**
-     * Method use to get the valid username
-     * check user exist or not
-     * @param payload
-     * @return AppResponse
-     * @throws Exception
-     * */
-    private AppResponse isUsernameAndIdExist(OrganizationRequest payload) throws Exception {
-        AppResponse validationResponse = this.validateUsername(payload);
-        if (!BarcoUtil.isNull(validationResponse)) {
-            return validationResponse;
-        } else if (BarcoUtil.isNull(payload.getId())) {
-            return new AppResponse(BarcoUtil.ERROR, MessageUtil.ID_MISSING);
         }
         return (AppResponse) BarcoUtil.NULL;
     }
