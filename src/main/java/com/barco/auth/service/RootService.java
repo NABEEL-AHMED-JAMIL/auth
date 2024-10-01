@@ -205,8 +205,7 @@ public interface RootService {
     }
 
     /**
-     * sendRegisterUser method use on user register.
-     *
+     * sendRegisterUserEmail method use to send email on user register account.
      * @param appUser
      * @param lookupDataCacheService
      * @param templateRegRepository
@@ -214,34 +213,11 @@ public interface RootService {
      */
     public default void sendRegisterUserEmail(AppUser appUser, LookupDataCacheService lookupDataCacheService,
         TemplateRegRepository templateRegRepository, EmailMessagesFactory emailMessagesFactory) {
-        try {
-            LookupDataResponse senderEmail = lookupDataCacheService.getParentLookupDataByParentLookupType(LookupUtil.NON_REPLY_EMAIL_SENDER);
-            Optional<TemplateReg> templateReg = templateRegRepository.findFirstByTemplateNameAndStatus(REGISTER_USER.name(), APPLICATION_STATUS.ACTIVE);
-            if (templateReg.isEmpty()) {
-                logger.error("No Template Found With {}.", REGISTER_USER.name());
-                return;
-            }
-            Map<String, Object> metaData = new HashMap<>();
-            metaData.put(EmailUtil.USERNAME, appUser.getUsername());
-            metaData.put(EmailUtil.FULL_NAME, appUser.getFirstName().concat(" ").concat(appUser.getLastName()));
-            metaData.put(EmailUtil.ROLE, appUser.getAppUserRoles().stream().map(Role::getName).collect(Collectors.joining(",")));
-            metaData.put(EmailUtil.PROFILE, appUser.getProfile().getProfileName());
-            // email send request
-            EmailMessageRequest emailMessageRequest = new EmailMessageRequest();
-            emailMessageRequest.setFromEmail(senderEmail.getLookupValue());
-            emailMessageRequest.setRecipients(appUser.getEmail());
-            emailMessageRequest.setSubject(EmailUtil.USER_REGISTERED);
-            emailMessageRequest.setBodyMap(metaData);
-            emailMessageRequest.setBodyPayload(templateReg.get().getTemplateContent());
-            logger.info("Email Send Status :- {}.", emailMessagesFactory.sendSimpleMailAsync(emailMessageRequest));
-        } catch (Exception ex) {
-            logger.error("Exception :- {}.", ExceptionUtil.getRootCauseMessage(ex));
-        }
+        sendEmail(appUser, lookupDataCacheService, templateRegRepository, emailMessagesFactory, REGISTER_USER.name(), EmailUtil.USER_REGISTERED, null);
     }
 
     /**
-     * sendRegisterUser method use on user register.
-     *
+     * sendRegisterOrgAccountUserEmail method use to send email on org register account.
      * @param appUser
      * @param lookupDataCacheService
      * @param templateRegRepository
@@ -249,36 +225,14 @@ public interface RootService {
      */
     public default void sendRegisterOrgAccountUserEmail(AppUser appUser, LookupDataCacheService lookupDataCacheService,
         TemplateRegRepository templateRegRepository, EmailMessagesFactory emailMessagesFactory) {
-        try {
-            LookupDataResponse senderEmail = lookupDataCacheService.getParentLookupDataByParentLookupType(LookupUtil.NON_REPLY_EMAIL_SENDER);
-            Optional<TemplateReg> templateReg = templateRegRepository.findFirstByTemplateNameAndStatus(REGISTER_USER.name(), APPLICATION_STATUS.ACTIVE);
-            if (templateReg.isEmpty()) {
-                logger.error("No Template Found With {}.", REGISTER_USER.name());
-                return;
-            }
-            Map<String, Object> metaData = new HashMap<>();
-            metaData.put(EmailUtil.USERNAME, appUser.getUsername());
-            metaData.put(EmailUtil.FULL_NAME, appUser.getFirstName().concat(" ").concat(appUser.getLastName()));
-            metaData.put(EmailUtil.ROLE, appUser.getAppUserRoles().stream().map(Role::getName).collect(Collectors.joining(",")));
-            metaData.put(EmailUtil.PROFILE, appUser.getProfile().getProfileName());
-            metaData.put(EmailUtil.ORG_NAME, appUser.getOrganization().getName());
-            metaData.put(EmailUtil.ORG_ADDRESS, appUser.getOrganization().getAddress().concat(",").concat(appUser.getOrganization().getCountry().getCountryName()));
-            // email send request
-            EmailMessageRequest emailMessageRequest = new EmailMessageRequest();
-            emailMessageRequest.setFromEmail(senderEmail.getLookupValue());
-            emailMessageRequest.setRecipients(appUser.getEmail());
-            emailMessageRequest.setSubject(EmailUtil.ORG_ACCOUNT_REGISTERED);
-            emailMessageRequest.setBodyMap(metaData);
-            emailMessageRequest.setBodyPayload(templateReg.get().getTemplateContent());
-            logger.info("Email Send Status :- {}.", emailMessagesFactory.sendSimpleMailAsync(emailMessageRequest));
-        } catch (Exception ex) {
-            logger.error("Exception :- {}.", ExceptionUtil.getRootCauseMessage(ex));
-        }
+        Map<String, Object> orgMetaData = new HashMap<>();
+        orgMetaData.put(EmailUtil.ORG_NAME, appUser.getOrganization().getName());
+        orgMetaData.put(EmailUtil.ORG_ADDRESS, appUser.getOrganization().getAddress().concat(",").concat(appUser.getOrganization().getCountry().getCountryName()));
+        sendEmail(appUser, lookupDataCacheService, templateRegRepository, emailMessagesFactory, REGISTER_ORG.name(), EmailUtil.ORG_ACCOUNT_REGISTERED, orgMetaData);
     }
 
     /**
-     * sendRegisterUser method use on user register.
-     *
+     * sendEnabledDisabledRegisterUserEmail method use to send email on user enabled and disabled.
      * @param appUser
      * @param lookupDataCacheService
      * @param templateRegRepository
@@ -286,39 +240,30 @@ public interface RootService {
      */
     public default void sendEnabledDisabledRegisterUserEmail(AppUser appUser, LookupDataCacheService lookupDataCacheService,
         TemplateRegRepository templateRegRepository, EmailMessagesFactory emailMessagesFactory) {
-        try {
-            LookupDataResponse senderEmail = lookupDataCacheService.getParentLookupDataByParentLookupType(LookupUtil.NON_REPLY_EMAIL_SENDER);
-            Optional<TemplateReg> templateReg;
-            if (appUser.getStatus().equals(APPLICATION_STATUS.ACTIVE)) {
-                templateReg = templateRegRepository.findFirstByTemplateNameAndStatus(ACTIVE_USER_ACCOUNT.name(), APPLICATION_STATUS.ACTIVE);
-            } else {
-                templateReg = templateRegRepository.findFirstByTemplateNameAndStatus(BLOCK_USER_ACCOUNT.name(), APPLICATION_STATUS.ACTIVE);
-            }
-            if (templateReg.isEmpty()) {
-                logger.error("No Template Found With {}.", (appUser.getStatus().equals(APPLICATION_STATUS.ACTIVE) ? ACTIVE_USER_ACCOUNT.name() : BLOCK_USER_ACCOUNT.name()));
-                return;
-            }
-            Map<String, Object> metaData = new HashMap<>();
-            metaData.put(EmailUtil.USERNAME, appUser.getUsername());
-            metaData.put(EmailUtil.FULL_NAME, appUser.getFirstName().concat(" ").concat(appUser.getLastName()));
-            metaData.put(EmailUtil.ROLE, appUser.getAppUserRoles().stream().map(Role::getName).collect(Collectors.joining(",")));
-            metaData.put(EmailUtil.PROFILE, appUser.getProfile().getProfileName());
-            // email send request
-            EmailMessageRequest emailMessageRequest = new EmailMessageRequest();
-            emailMessageRequest.setFromEmail(senderEmail.getLookupValue());
-            emailMessageRequest.setRecipients(appUser.getEmail());
-            emailMessageRequest.setSubject(appUser.getStatus().equals(APPLICATION_STATUS.ACTIVE) ? EmailUtil.YOUR_ACCOUNT_IS_NOW_ACTIVE : EmailUtil.YOUR_ACCOUNT_HAS_BEEN_BLOCKED);
-            emailMessageRequest.setBodyMap(metaData);
-            emailMessageRequest.setBodyPayload(templateReg.get().getTemplateContent());
-            logger.info("Email Send Status :- {}.", emailMessagesFactory.sendSimpleMailAsync(emailMessageRequest));
-        } catch (Exception ex) {
-            logger.error("Exception :- {}.", ExceptionUtil.getRootCauseMessage(ex));
-        }
+        String templateName = appUser.getStatus().equals(APPLICATION_STATUS.ACTIVE) ? ACTIVE_USER_ACCOUNT.name() : BLOCK_USER_ACCOUNT.name();
+        String subject = appUser.getStatus().equals(APPLICATION_STATUS.ACTIVE) ? EmailUtil.YOUR_ACCOUNT_IS_NOW_ACTIVE : EmailUtil.YOUR_ACCOUNT_HAS_BEEN_BLOCKED;
+        sendEmail(appUser, lookupDataCacheService, templateRegRepository, emailMessagesFactory, templateName, subject, null);
     }
 
     /**
-     * sendRegisterUser method use on user register.
-     *
+     * sendEnabledDisabledOrgAccountUserEmail method use to send email on org enabled and disabled.
+     * @param appUser
+     * @param lookupDataCacheService
+     * @param templateRegRepository
+     * @param emailMessagesFactory
+     */
+    public default void sendEnabledDisabledOrgAccountUserEmail(AppUser appUser, LookupDataCacheService lookupDataCacheService,
+        TemplateRegRepository templateRegRepository, EmailMessagesFactory emailMessagesFactory) {
+        Map<String, Object> orgMetaData = new HashMap<>();
+        orgMetaData.put(EmailUtil.ORG_NAME, appUser.getOrganization().getName());
+        orgMetaData.put(EmailUtil.ORG_ADDRESS, appUser.getOrganization().getAddress().concat(",").concat(appUser.getOrganization().getCountry().getCountryName()));
+        String templateName = appUser.getStatus().equals(APPLICATION_STATUS.ACTIVE) ? ACTIVE_ORG_ACCOUNT.name() : BLOCK_ORG_ACCOUNT.name();
+        String subject = appUser.getStatus().equals(APPLICATION_STATUS.ACTIVE) ? EmailUtil.YOUR_ACCOUNT_IS_NOW_ACTIVE : EmailUtil.YOUR_ACCOUNT_HAS_BEEN_BLOCKED;
+        sendEmail(appUser, lookupDataCacheService, templateRegRepository, emailMessagesFactory, templateName, subject, orgMetaData);
+    }
+
+    /**
+     * sendForgotPasswordEmail method use to send email on user forgot password email.
      * @param appUser
      * @param lookupDataCacheService
      * @param templateRegRepository
@@ -326,41 +271,19 @@ public interface RootService {
      */
     public default void sendForgotPasswordEmail(AppUser appUser, LookupDataCacheService lookupDataCacheService,
         TemplateRegRepository templateRegRepository, EmailMessagesFactory emailMessagesFactory, JwtUtils jwtUtils) {
-        try {
-            LookupDataResponse senderEmail = lookupDataCacheService.getParentLookupDataByParentLookupType(LookupUtil.NON_REPLY_EMAIL_SENDER);
-            LookupDataResponse forgotPasswordUrl = lookupDataCacheService.getParentLookupDataByParentLookupType(LookupUtil.RESET_PASSWORD_LINK);
-            Optional<TemplateReg> templateReg = templateRegRepository.findFirstByTemplateNameAndStatus(FORGOT_USER_PASSWORD.name(), APPLICATION_STATUS.ACTIVE);
-            if (templateReg.isEmpty()) {
-                logger.error("No Template Found With {}.", FORGOT_USER_PASSWORD.name());
-                return;
-            }
-            // forgot password
-            ForgotPasswordRequest forgotPasswordRequest = new ForgotPasswordRequest();
-            forgotPasswordRequest.setUuid(appUser.getUuid());
-            forgotPasswordRequest.setEmail(appUser.getEmail());
-            forgotPasswordRequest.setUsername(appUser.getUsername());
-            // meta data
-            Map<String, Object> metaData = new HashMap<>();
-            metaData.put(EmailUtil.USERNAME, appUser.getUsername());
-            metaData.put(EmailUtil.FULL_NAME, appUser.getFirstName().concat(" ").concat(appUser.getLastName()));
-            metaData.put(EmailUtil.FORGOT_PASSWORD_URL, forgotPasswordUrl.getLookupValue().concat("?token=")
-                .concat(jwtUtils.generateTokenFromUsernameResetPassword(forgotPasswordRequest.toString())));
-            // email send request
-            EmailMessageRequest emailMessageRequest = new EmailMessageRequest();
-            emailMessageRequest.setFromEmail(senderEmail.getLookupValue());
-            emailMessageRequest.setRecipients(appUser.getEmail());
-            emailMessageRequest.setSubject(EmailUtil.FORGOT_PASSWORD);
-            emailMessageRequest.setBodyMap(metaData);
-            emailMessageRequest.setBodyPayload(templateReg.get().getTemplateContent());
-            logger.info("Email Send Status :- {}.", emailMessagesFactory.sendSimpleMailAsync(emailMessageRequest));
-        } catch (Exception ex) {
-            logger.error("Exception :- {}.", ExceptionUtil.getRootCauseMessage(ex));
-        }
+        LookupDataResponse forgotPasswordUrl = lookupDataCacheService.getParentLookupDataByParentLookupType(LookupUtil.RESET_PASSWORD_LINK);
+        ForgotPasswordRequest forgotPasswordRequest = new ForgotPasswordRequest();
+        forgotPasswordRequest.setUuid(appUser.getUuid());
+        forgotPasswordRequest.setEmail(appUser.getEmail());
+        forgotPasswordRequest.setUsername(appUser.getUsername());
+        String resetLink = forgotPasswordUrl.getLookupValue().concat("?token=").concat(jwtUtils.generateTokenFromUsernameResetPassword(forgotPasswordRequest.toString()));
+        Map<String, Object> forgotMetaData = new HashMap<>();
+        forgotMetaData.put(EmailUtil.FORGOT_PASSWORD_URL, resetLink);
+        sendEmail(appUser, lookupDataCacheService, templateRegRepository, emailMessagesFactory, FORGOT_USER_PASSWORD.name(), EmailUtil.FORGOT_PASSWORD, forgotMetaData);
     }
 
     /**
-     * sendResetPassword method use to send reset confirm email
-     *
+     * sendResetPassword method use to send email on to send reset confirm email
      * @param appUser
      * @param lookupDataCacheService
      * @param templateRegRepository
@@ -368,32 +291,11 @@ public interface RootService {
      */
     public default void sendResetPasswordEmail(AppUser appUser, LookupDataCacheService lookupDataCacheService,
         TemplateRegRepository templateRegRepository, EmailMessagesFactory emailMessagesFactory) {
-        try {
-            LookupDataResponse senderEmail = lookupDataCacheService.getParentLookupDataByParentLookupType(LookupUtil.NON_REPLY_EMAIL_SENDER);
-            Optional<TemplateReg> templateReg = templateRegRepository.findFirstByTemplateNameAndStatus(RESET_USER_PASSWORD.name(), APPLICATION_STATUS.ACTIVE);
-            if (templateReg.isEmpty()) {
-                logger.info("No Template Found With {}.", RESET_USER_PASSWORD.name());
-                return;
-            }
-            Map<String, Object> metaData = new HashMap<>();
-            metaData.put(EmailUtil.USERNAME, appUser.getUsername());
-            metaData.put(EmailUtil.FULL_NAME, appUser.getFirstName().concat(" ").concat(appUser.getLastName()));
-            // email send request
-            EmailMessageRequest emailMessageRequest = new EmailMessageRequest();
-            emailMessageRequest.setFromEmail(senderEmail.getLookupValue());
-            emailMessageRequest.setRecipients(appUser.getEmail());
-            emailMessageRequest.setSubject(EmailUtil.PASSWORD_UPDATED);
-            emailMessageRequest.setBodyMap(metaData);
-            emailMessageRequest.setBodyPayload(templateReg.get().getTemplateContent());
-            logger.info("Email Send Status :- {}.", emailMessagesFactory.sendSimpleMailAsync(emailMessageRequest));
-        } catch (Exception ex) {
-            logger.error("Exception :- {}.", ExceptionUtil.getRootCauseMessage(ex));
-        }
+        sendEmail(appUser, lookupDataCacheService, templateRegRepository, emailMessagesFactory, RESET_USER_PASSWORD.name(), EmailUtil.PASSWORD_UPDATED, null);
     }
 
     /**
      * send close user account email
-     *
      * @param appUser
      * @param lookupDataCacheService
      * @param templateRegRepository
@@ -401,21 +303,39 @@ public interface RootService {
      */
     public default void sendCloseUserAccountEmail(AppUser appUser, LookupDataCacheService lookupDataCacheService,
         TemplateRegRepository templateRegRepository, EmailMessagesFactory emailMessagesFactory) {
+        sendEmail(appUser, lookupDataCacheService, templateRegRepository, emailMessagesFactory, DELETE_USER_ACCOUNT.name(), EmailUtil.PASSWORD_UPDATED, null);
+    }
+
+    /**
+     * sendEmail method use to send email.
+     * @param appUser
+     * @param lookupDataCacheService
+     * @param templateRegRepository
+     * @param emailMessagesFactory
+     */
+    private void sendEmail(AppUser appUser, LookupDataCacheService lookupDataCacheService, TemplateRegRepository templateRegRepository,
+        EmailMessagesFactory emailMessagesFactory, String templateName, String subject, Map<String, Object> additionalMetaData) {
         try {
             LookupDataResponse senderEmail = lookupDataCacheService.getParentLookupDataByParentLookupType(LookupUtil.NON_REPLY_EMAIL_SENDER);
-            Optional<TemplateReg> templateReg = templateRegRepository.findFirstByTemplateNameAndStatus(DELETE_USER_ACCOUNT.name(), APPLICATION_STATUS.ACTIVE);
+            Optional<TemplateReg> templateReg = templateRegRepository.findFirstByTemplateNameAndStatus(templateName, APPLICATION_STATUS.ACTIVE);
             if (templateReg.isEmpty()) {
-                logger.info("No Template Found With {}.", RESET_USER_PASSWORD.name());
+                logger.error("No Template Found With {}.", templateName);
                 return;
             }
+            // common metadata
             Map<String, Object> metaData = new HashMap<>();
             metaData.put(EmailUtil.USERNAME, appUser.getUsername());
             metaData.put(EmailUtil.FULL_NAME, appUser.getFirstName().concat(" ").concat(appUser.getLastName()));
+            metaData.put(EmailUtil.ROLE, appUser.getAppUserRoles().stream().map(Role::getDescription).collect(Collectors.joining(",")));
+            metaData.put(EmailUtil.PROFILE, appUser.getProfile().getDescription());
+            if (additionalMetaData != null) {
+                metaData.putAll(additionalMetaData);
+            }
             // email send request
             EmailMessageRequest emailMessageRequest = new EmailMessageRequest();
             emailMessageRequest.setFromEmail(senderEmail.getLookupValue());
             emailMessageRequest.setRecipients(appUser.getEmail());
-            emailMessageRequest.setSubject(EmailUtil.PASSWORD_UPDATED);
+            emailMessageRequest.setSubject(subject);
             emailMessageRequest.setBodyMap(metaData);
             emailMessageRequest.setBodyPayload(templateReg.get().getTemplateContent());
             logger.info("Email Send Status :- {}.", emailMessagesFactory.sendSimpleMailAsync(emailMessageRequest));
@@ -805,6 +725,5 @@ public interface RootService {
         calendar.add(Calendar.YEAR, 1);
         return new Timestamp(calendar.getTimeInMillis());
     }
-
 
 }

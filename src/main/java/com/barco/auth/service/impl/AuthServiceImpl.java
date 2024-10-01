@@ -81,7 +81,8 @@ public class AuthServiceImpl implements AuthService {
     public AppResponse signInAppUser(LoginRequest payload) throws Exception {
         logger.info("Request signInAppUser :- {}.", payload);
         // spring auth manager will call user detail service
-        Authentication authentication = this.authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(payload.getUsername(), payload.getPassword()));
+        Authentication authentication = this.authenticationManager.authenticate(
+            new UsernamePasswordAuthenticationToken(payload.getUsername(), payload.getPassword()));
         SecurityContextHolder.getContext().setAuthentication(authentication);
         // get the user detail from authentication
         UserSessionDetail userDetails = (UserSessionDetail) authentication.getPrincipal();
@@ -134,17 +135,16 @@ public class AuthServiceImpl implements AuthService {
           => admin can change the account type and profile type and role type
           **/
         // register user will get the default role USER
-        this.roleRepository.findByNameAndStatus(this.lookupDataCacheService.getParentLookupDataByParentLookupType(
-            LookupUtil.DEFAULT_ROLE).getLookupValue(), APPLICATION_STATUS.ACTIVE).ifPresent(role -> newAppUser.setAppUserRoles(Set.of(role)));
+        this.roleRepository.findByNameAndStatus(this.lookupDataCacheService.getParentLookupDataByParentLookupType(LookupUtil.DEFAULT_ROLE).getLookupValue(),
+            APPLICATION_STATUS.ACTIVE).ifPresent(role -> newAppUser.setAppUserRoles(Set.of(role)));
         // register user will get the default profile USER
         this.profileRepository.findProfileByProfileName(this.lookupDataCacheService.getParentLookupDataByParentLookupType(
             LookupUtil.DEFAULT_PROFILE).getLookupValue()).ifPresent(newAppUser::setProfile);
         // register user account type as 'Customer'
-        newAppUser.setAccountType(ACCOUNT_TYPE.CUSTOMER);
+        newAppUser.setAccountType(ACCOUNT_TYPE.NORMAL);
         this.appUserRepository.save(newAppUser);
         // notification & register email
-        Optional<AppUser> superAdmin = this.appUserRepository.findByUsernameAndStatus(this.lookupDataCacheService.getParentLookupDataByParentLookupType(
-            LookupUtil.ROOT_USER).getLookupValue(), APPLICATION_STATUS.ACTIVE);
+        Optional<AppUser> superAdmin = this.appUserRepository.findByUsernameAndStatus(this.lookupDataCacheService.getParentLookupDataByParentLookupType(LookupUtil.ROOT_USER).getLookupValue(), APPLICATION_STATUS.ACTIVE);
         if (superAdmin.isPresent()) {
             // linking all env variable to the user give by the system
             for (EnvVariables envVariables : this.envVariablesRepository.findAllByCreatedByAndStatusNotOrderByDateCreatedDesc(superAdmin.get(), APPLICATION_STATUS.DELETE)) {
@@ -267,6 +267,7 @@ public class AuthServiceImpl implements AuthService {
         authResponse.setUsername(userDetails.getUsername());
         authResponse.setProfileImage(userDetails.getProfileImage());
         authResponse.setIpAddress(userDetails.getIpAddress());
+        authResponse.setOrgAccount(userDetails.getOrgAccount());
         authResponse.setRoles(userDetails.getAuthorities().stream().map(GrantedAuthority::getAuthority).collect(Collectors.toList()));
         if (!BarcoUtil.isNull(userDetails.getProfile())) {
             authResponse.setProfile(this.getProfilePermissionResponse(userDetails.getProfile()));

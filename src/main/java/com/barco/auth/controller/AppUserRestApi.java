@@ -17,7 +17,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -162,6 +161,8 @@ public class AppUserRestApi extends RootRestApi {
     @RequestMapping(value = "/deleteAppUserAccount", method = RequestMethod.POST)
     public ResponseEntity<?> deleteAppUserAccount(@RequestBody AppUserRequest payload) {
         try {
+            // user session detail
+            payload.setSessionUser(this.getSessionUser());
             return new ResponseEntity<>(this.appUserService.deleteAppUserAccount(payload), HttpStatus.OK);
         } catch (Exception ex) {
             logger.error("An error occurred while closeAppUserAccount ", ExceptionUtil.getRootCause(ex));

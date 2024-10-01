@@ -13,7 +13,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -70,25 +69,6 @@ public class OrganizationRestApi extends RootRestApi {
     }
 
     /**
-     * @apiName :- fetchOrgAccountById
-     * @apiNote :- Method use to fetch org by id
-     * @param payload
-     * @return ResponseEntity
-     * */
-    @ApiOperation(value = "Api use to fetch the org account.", response = ResponseEntity.class)
-    @PreAuthorize("hasRole('MASTER_ADMIN') or hasRole('DB') or hasRole('DEV')")
-    @RequestMapping(value="/fetchOrgAccountById", method= RequestMethod.POST)
-    public ResponseEntity<?> fetchOrgAccountById(@RequestBody OrganizationRequest payload) {
-        try {
-            payload.setSessionUser(this.getSessionUser());
-            return new ResponseEntity<>(this.organizationService.fetchOrgAccountById(payload), HttpStatus.OK);
-        } catch (Exception ex) {
-            logger.error("An error occurred while fetchOrgAccountById ", ExceptionUtil.getRootCause(ex));
-            return new ResponseEntity<>(new AppResponse(BarcoUtil.ERROR, ex.getMessage()), HttpStatus.BAD_REQUEST);
-        }
-    }
-
-    /**
      * @apiName :- fetchAllOrgAccount
      * @apiNote :- Method use to fetch all org
      * @param payload
@@ -122,25 +102,6 @@ public class OrganizationRestApi extends RootRestApi {
             return new ResponseEntity<>(this.organizationService.deleteOrgAccountById(payload), HttpStatus.OK);
         } catch (Exception ex) {
             logger.error("An error occurred while deleteOrgAccountById ", ExceptionUtil.getRootCause(ex));
-            return new ResponseEntity<>(new AppResponse(BarcoUtil.ERROR, ex.getMessage()), HttpStatus.BAD_REQUEST);
-        }
-    }
-
-    /**
-     * @apiName :- deleteAllOrgAccount
-     * @apiNote :- Method use to delete all org
-     * @param payload
-     * @return ResponseEntity
-     * */
-    @ApiOperation(value = "Api use to delete all the org account.", response = ResponseEntity.class)
-    @PreAuthorize("hasRole('MASTER_ADMIN') or hasRole('DB') or hasRole('DEV')")
-    @RequestMapping(value="/deleteAllOrgAccount", method= RequestMethod.POST)
-    public ResponseEntity<?> deleteAllOrgAccount(@RequestBody OrganizationRequest payload) {
-        try {
-            payload.setSessionUser(this.getSessionUser());
-            return new ResponseEntity<>(this.organizationService.deleteAllOrgAccount(payload), HttpStatus.OK);
-        } catch (Exception ex) {
-            logger.error("An error occurred while deleteAllOrgAccount ", ExceptionUtil.getRootCause(ex));
             return new ResponseEntity<>(new AppResponse(BarcoUtil.ERROR, ex.getMessage()), HttpStatus.BAD_REQUEST);
         }
     }

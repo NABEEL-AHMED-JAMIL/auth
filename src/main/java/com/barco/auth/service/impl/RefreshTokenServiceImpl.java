@@ -50,7 +50,7 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
     @Override
     public AppResponse fetchSessionStatistics() throws Exception {
         logger.info("Request fetchSessionStatistics");
-        QueryResponse queryResponse = this.queryService.executeQueryResponse(QueryService.SESSION_STATISTICS);
+        QueryResponse queryResponse = this.queryService.executeQueryResponse(QueryService.TOKEN_SESSION_STATISTICS);
         queryResponse.setQuery((String) BarcoUtil.NULL);
         return new AppResponse(BarcoUtil.SUCCESS, MessageUtil.DATA_FETCH_SUCCESSFULLY, queryResponse);
     }

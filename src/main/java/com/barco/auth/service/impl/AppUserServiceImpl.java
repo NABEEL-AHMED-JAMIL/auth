@@ -198,28 +198,15 @@ public class AppUserServiceImpl implements AppUserService {
     @Override
     public AppResponse addAppUserAccount(AppUserRequest payload) throws Exception {
         logger.info("Request addAppUserAccount :- {}.", payload);
-        if (BarcoUtil.isNull(payload.getFirstName())) {
-            return new AppResponse(BarcoUtil.ERROR, MessageUtil.FIRST_NAME_MISSING);
-        } else if (BarcoUtil.isNull(payload.getLastName())) {
-            return new AppResponse(BarcoUtil.ERROR, MessageUtil.LAST_NAME_MISSING);
-        } else if (BarcoUtil.isNull(payload.getUsername())) {
-            return new AppResponse(BarcoUtil.ERROR, MessageUtil.USERNAME_MISSING);
-        } else if (BarcoUtil.isNull(payload.getEmail())) {
-            return new AppResponse(BarcoUtil.ERROR, MessageUtil.EMAIL_MISSING);
+        AppResponse validationResponse = this.isValidAppUserDetail(payload);
+        if (!BarcoUtil.isNull(validationResponse)) {
+            return validationResponse;
         } else if (BarcoUtil.isNull(payload.getPassword())) {
             return new AppResponse(BarcoUtil.ERROR, MessageUtil.PASSWORD_MISSING);
         } else if (this.appUserRepository.existsByUsername(payload.getUsername())) {
             return new AppResponse(BarcoUtil.ERROR, MessageUtil.USERNAME_ALREADY_TAKEN);
         } else if (this.appUserRepository.existsByEmail(payload.getEmail())) {
             return new AppResponse(BarcoUtil.ERROR, MessageUtil.EMAIL_ALREADY_IN_USE);
-        } else if (BarcoUtil.isNull(payload.getIpAddress())) {
-            return new AppResponse(BarcoUtil.ERROR, MessageUtil.IP_ADDRESS_MISSING);
-        } else if (BarcoUtil.isNull(payload.getAssignRole())) {
-            return new AppResponse(BarcoUtil.ERROR, MessageUtil.ROLE_MISSING);
-        } else if (BarcoUtil.isNull(payload.getProfile())) {
-            return new AppResponse(BarcoUtil.ERROR, MessageUtil.PROFILE_MISSING);
-        } else if (BarcoUtil.isNull(payload.getAccountType())) {
-            return new AppResponse(BarcoUtil.ERROR, MessageUtil.PROFILE_ACCOUNT_TYPE_MISSING);
         }
         Optional<AppUser> adminUser = this.appUserRepository.findByUsernameAndStatus(payload.getSessionUser().getUsername(), APPLICATION_STATUS.ACTIVE);
         if (adminUser.isEmpty()) {
@@ -298,24 +285,11 @@ public class AppUserServiceImpl implements AppUserService {
     @Override
     public AppResponse updateAppUserAccount(AppUserRequest payload) throws Exception {
         logger.info("Request updateAppUserAccount :- {}.", payload);
-        if (BarcoUtil.isNull(payload.getUuid())) {
+        AppResponse validationResponse = this.isValidAppUserDetail(payload);
+        if (!BarcoUtil.isNull(validationResponse)) {
+            return validationResponse;
+        } else if (BarcoUtil.isNull(payload.getUuid())) {
             return new AppResponse(BarcoUtil.ERROR, MessageUtil.ID_MISSING);
-        } else if (BarcoUtil.isNull(payload.getFirstName())) {
-            return new AppResponse(BarcoUtil.ERROR, MessageUtil.FIRST_NAME_MISSING);
-        } else if (BarcoUtil.isNull(payload.getLastName())) {
-            return new AppResponse(BarcoUtil.ERROR, MessageUtil.LAST_NAME_MISSING);
-        } else if (BarcoUtil.isNull(payload.getUsername())) {
-            return new AppResponse(BarcoUtil.ERROR, MessageUtil.USERNAME_MISSING);
-        } else if (BarcoUtil.isNull(payload.getEmail())) {
-            return new AppResponse(BarcoUtil.ERROR, MessageUtil.EMAIL_MISSING);
-        } else if (BarcoUtil.isNull(payload.getIpAddress())) {
-            return new AppResponse(BarcoUtil.ERROR, MessageUtil.IP_ADDRESS_MISSING);
-        } else if (BarcoUtil.isNull(payload.getAssignRole())) {
-            return new AppResponse(BarcoUtil.ERROR, MessageUtil.ROLE_MISSING);
-        } else if (BarcoUtil.isNull(payload.getProfile())) {
-            return new AppResponse(BarcoUtil.ERROR, MessageUtil.PROFILE_MISSING);
-        } else if (BarcoUtil.isNull(payload.getAccountType())) {
-            return new AppResponse(BarcoUtil.ERROR, MessageUtil.PROFILE_ACCOUNT_TYPE_MISSING);
         }
         Optional<AppUser> adminUser = this.appUserRepository.findByUsernameAndStatus(payload.getSessionUser().getUsername(), APPLICATION_STATUS.ACTIVE);
         if (adminUser.isEmpty()) {
@@ -323,24 +297,12 @@ public class AppUserServiceImpl implements AppUserService {
         }
         // check the access for role and profile for user creating
         Optional<AppUser> updateAppUser = this.appUserRepository.findByUuidAndStatusNot(payload.getUuid(), APPLICATION_STATUS.DELETE);
-        if (!BarcoUtil.isNull(payload.getFirstName())) {
-            updateAppUser.get().setFirstName(payload.getFirstName());
-        }
-        if (!BarcoUtil.isNull(payload.getLastName())) {
-            updateAppUser.get().setLastName(payload.getLastName());
-        }
-        if (!BarcoUtil.isNull(payload.getEmail())) {
-            updateAppUser.get().setEmail(payload.getEmail());
-        }
-        if (!BarcoUtil.isNull(payload.getUsername())) {
-            updateAppUser.get().setUsername(payload.getUsername());
-        }
-        if (!BarcoUtil.isNull(payload.getIpAddress())) {
-            updateAppUser.get().setIpAddress(payload.getIpAddress());
-        }
-        if (!BarcoUtil.isNull(payload.getAccountType())) { // account type
-            updateAppUser.get().setAccountType(ACCOUNT_TYPE.getByLookupCode(payload.getAccountType()));
-        }
+        updateAppUser.get().setFirstName(payload.getFirstName());
+        updateAppUser.get().setLastName(payload.getLastName());
+        updateAppUser.get().setEmail(payload.getEmail());
+        updateAppUser.get().setUsername(payload.getUsername());
+        updateAppUser.get().setIpAddress(payload.getIpAddress());
+        updateAppUser.get().setAccountType(ACCOUNT_TYPE.getByLookupCode(payload.getAccountType()));
         if (!payload.getUsername().equals(updateAppUser.get().getUsername()) && this.appUserRepository.existsByUsername(payload.getUsername())) {
             return new AppResponse(BarcoUtil.ERROR, MessageUtil.USERNAME_ALREADY_TAKEN);
         } else if (!payload.getEmail().equals(updateAppUser.get().getEmail()) && this.appUserRepository.existsByEmail(payload.getEmail())) {
@@ -420,10 +382,7 @@ public class AppUserServiceImpl implements AppUserService {
     @Override
     public AppResponse deleteAppUserAccount(AppUserRequest payload) throws Exception {
         logger.info("Request deleteAppUserAccount :- {}.", payload);
-        AppResponse validationResponse = this.validateUsername(payload);
-        if (!BarcoUtil.isNull(validationResponse)) {
-            return validationResponse;
-        } else if (BarcoUtil.isNull(payload.getUsername())) {
+        if (BarcoUtil.isNull(payload.getUsername())) {
             return new AppResponse(BarcoUtil.ERROR, MessageUtil.USERNAME_MISSING);
         }
         Optional<AppUser> adminUser = this.appUserRepository.findByUsernameAndStatus(payload.getSessionUser().getUsername(), APPLICATION_STATUS.ACTIVE);
@@ -571,6 +530,32 @@ public class AppUserServiceImpl implements AppUserService {
         ByteArrayOutputStream outSteam = new ByteArrayOutputStream();
         workbook.write(outSteam);
         return outSteam;
+    }
+
+    /**
+     * Method used to validate the app user detail.
+     * @param payload
+     * @return AppResponse
+     */
+    private AppResponse isValidAppUserDetail(AppUserRequest payload) {
+        if (BarcoUtil.isNull(payload.getFirstName())) {
+            return new AppResponse(BarcoUtil.ERROR, MessageUtil.FIRST_NAME_MISSING);
+        } else if (BarcoUtil.isNull(payload.getLastName())) {
+            return new AppResponse(BarcoUtil.ERROR, MessageUtil.LAST_NAME_MISSING);
+        } else if (BarcoUtil.isNull(payload.getUsername())) {
+            return new AppResponse(BarcoUtil.ERROR, MessageUtil.USERNAME_MISSING);
+        } else if (BarcoUtil.isNull(payload.getEmail())) {
+            return new AppResponse(BarcoUtil.ERROR, MessageUtil.EMAIL_MISSING);
+        } else if (BarcoUtil.isNull(payload.getIpAddress())) {
+            return new AppResponse(BarcoUtil.ERROR, MessageUtil.IP_ADDRESS_MISSING);
+        } else if (BarcoUtil.isNull(payload.getAssignRole())) {
+            return new AppResponse(BarcoUtil.ERROR, MessageUtil.ROLE_MISSING);
+        } else if (BarcoUtil.isNull(payload.getProfile())) {
+            return new AppResponse(BarcoUtil.ERROR, MessageUtil.PROFILE_MISSING);
+        } else if (BarcoUtil.isNull(payload.getAccountType())) {
+            return new AppResponse(BarcoUtil.ERROR, MessageUtil.PROFILE_ACCOUNT_TYPE_MISSING);
+        }
+        return (AppResponse) BarcoUtil.NULL;
     }
 
     /**

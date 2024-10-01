@@ -12,12 +12,8 @@ public interface OrganizationService extends RootService {
 
     public AppResponse updateOrgAccount(OrganizationRequest payload) throws Exception;
 
-    public AppResponse fetchOrgAccountById(OrganizationRequest payload) throws Exception;
-
     public AppResponse fetchAllOrgAccount(OrganizationRequest payload) throws Exception;
 
     public AppResponse deleteOrgAccountById(OrganizationRequest payload) throws Exception;
-
-    public AppResponse deleteAllOrgAccount(OrganizationRequest payload) throws Exception;
 
 }

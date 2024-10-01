@@ -139,8 +139,8 @@ public class RPPServiceImpl implements RPPService {
     @Override
     public AppResponse fetchAllRole(RoleRequest payload) throws Exception {
         logger.info("Request fetchAllRole :- {}.", payload);
-        return new AppResponse(BarcoUtil.SUCCESS, MessageUtil.DATA_FETCH_SUCCESSFULLY,
-            RoleRepository.asStream(this.roleRepository.findAll().iterator()).map(this::gateRoleResponse).collect(Collectors.toList()));
+        return new AppResponse(BarcoUtil.SUCCESS, MessageUtil.DATA_FETCH_SUCCESSFULLY, RoleRepository.asStream(
+            this.roleRepository.findAll().iterator()).map(this::gateRoleResponse).collect(Collectors.toList()));
     }
 
     /**
@@ -368,9 +368,7 @@ public class RPPServiceImpl implements RPPService {
             return new AppResponse(BarcoUtil.ERROR, MessageUtil.PROFILE_ALREADY_EXIST);
         }
         profile.get().setProfileName(payload.getProfileName());
-        if (!BarcoUtil.isNull(payload.getDescription())) {
-            profile.get().setDescription(payload.getDescription());
-        }
+        profile.get().setDescription(payload.getDescription());
         // active and in-active
         Optional<AppUser> appUser = this.appUserRepository.findByUsernameAndStatus(payload.getSessionUser().getUsername(), APPLICATION_STATUS.ACTIVE);
         if (!BarcoUtil.isNull(payload.getStatus())) {
@@ -495,8 +493,8 @@ public class RPPServiceImpl implements RPPService {
             profileList = this.profileRepository.findAll().iterator();
         }
         while (profileList.hasNext()) {
-            Profile profile = profileList.next();
             rowCount.getAndIncrement();
+            Profile profile = profileList.next();
             this.bulkExcel.fillBulkBody(List.of(profile.getProfileName(), profile.getDescription()), rowCount.get());
         }
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
@@ -633,9 +631,7 @@ public class RPPServiceImpl implements RPPService {
             return new AppResponse(BarcoUtil.ERROR, MessageUtil.PERMISSION_ALREADY_EXIST);
         }
         permission.get().setPermissionName(payload.getPermissionName());
-        if (!BarcoUtil.isNull(payload.getDescription())) {
-            permission.get().setDescription(payload.getDescription());
-        }
+        permission.get().setDescription(payload.getDescription());
         // active and in-active
         Optional<AppUser> appUser = this.appUserRepository.findByUsernameAndStatus(payload.getSessionUser().getUsername(), APPLICATION_STATUS.ACTIVE);
         if (!BarcoUtil.isNull(payload.getStatus())) {
@@ -852,12 +848,12 @@ public class RPPServiceImpl implements RPPService {
         CrossTabResponse crossTabResponse = new CrossTabResponse();
         List<ProfileResponse> profileResponses = new ArrayList<>();
         this.profileRepository.findAll().forEach(profile -> {
-            profileResponses.add(getProfileResponse(profile));
+            profileResponses.add(this.getProfileResponse(profile));
         });
         crossTabResponse.setRow(profileResponses);
         List<PermissionResponse> permissionResponses = new ArrayList<>();
         this.permissionRepository.findAll().forEach(permission -> {
-            permissionResponses.add(getPermissionResponse(permission));
+            permissionResponses.add(this.getPermissionResponse(permission));
         });
         crossTabResponse.setCol(permissionResponses);
         // existing cross
@@ -871,8 +867,8 @@ public class RPPServiceImpl implements RPPService {
                 }
             }
             // iterate over profile and permission make combination for all => profile.1=>permission.*
-            for (ProfileResponse profileResponse: (List<ProfileResponse>)crossTabResponse.getRow()) {
-                for (PermissionResponse permissionResponse: (List<PermissionResponse>)crossTabResponse.getCol()) {
+            for (ProfileResponse profileResponse: (List<ProfileResponse>) crossTabResponse.getRow()) {
+                for (PermissionResponse permissionResponse: (List<PermissionResponse>) crossTabResponse.getCol()) {
                     String key = profileResponse.getUuid()+"||"+permissionResponse.getUuid();
                     // checking the link cross table and adding those value into hash-table
                     if (!profilePermissionCrossTabs.containsKey(key)) {
@@ -922,7 +918,7 @@ public class RPPServiceImpl implements RPPService {
             // delete operation de-link
             this.queryService.deleteQuery(String.format(QueryService.DELETE_PROFILE_PERMISSION_BY_PROFILE_ID_AND_PERMISSION_ID, profile.getId(), permission.getId()));
         }
-        return new AppResponse(BarcoUtil.SUCCESS, String.format(MessageUtil.DATA_UPDATE, payload.getProfileUuid().concat("||".concat(payload.getPermissionUuid()))), payload);
+        return new AppResponse(BarcoUtil.SUCCESS, String.format(MessageUtil.DATA_UPDATE, payload.getProfileUuid().concat("||").concat(payload.getPermissionUuid())), payload);
     }
 
     /**
