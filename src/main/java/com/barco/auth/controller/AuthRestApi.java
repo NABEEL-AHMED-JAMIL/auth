@@ -10,12 +10,12 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import javax.servlet.http.HttpServletRequest;
 import java.util.stream.Collectors;
+
 
 /**
  * Api use to perform crud operation
@@ -25,13 +25,16 @@ import java.util.stream.Collectors;
 @CrossOrigin(origins="*")
 @RequestMapping(value = "/auth.json")
 @Api(value = "Auth Rest Api",
-   description = "Auth Service : Use to perform the authentication and authorization. ")
+   description = "Auth Service : Use to perform the authentication and authorization.")
 public class AuthRestApi {
 
     private Logger logger = LoggerFactory.getLogger(AuthRestApi.class);
 
-    @Autowired
     private AuthService authService;
+
+    public AuthRestApi(AuthService authService) {
+        this.authService = authService;
+    }
 
     /**
      * @apiName :- signInAppUser

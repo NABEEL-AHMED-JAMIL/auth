@@ -8,8 +8,6 @@ import com.barco.model.dto.request.*;
 import com.barco.model.dto.response.AppResponse;
 import com.barco.model.dto.response.AuthResponse;
 import com.barco.model.pojo.AppUser;
-import com.barco.model.pojo.EnvVariables;
-import com.barco.model.pojo.EventBridge;
 import com.barco.model.pojo.RefreshToken;
 import com.barco.model.repository.*;
 import com.barco.model.security.UserSessionDetail;
@@ -17,7 +15,6 @@ import com.barco.model.util.MessageUtil;
 import com.barco.model.util.lookup.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -25,7 +22,6 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -38,38 +34,41 @@ public class AuthServiceImpl implements AuthService {
 
     private Logger logger = LoggerFactory.getLogger(AuthServiceImpl.class);
 
-    @Autowired
     private JwtUtils jwtUtils;
-    @Autowired
     private PasswordEncoder passwordEncoder;
-    @Autowired
     private RoleRepository roleRepository;
-    @Autowired
     private AppUserRepository appUserRepository;
-    @Autowired
     private ProfileRepository profileRepository;
-    @Autowired
     private TemplateRegRepository templateRegRepository;
-    @Autowired
-    private EnvVariablesRepository envVariablesRepository;
-    @Autowired
-    private EventBridgeRepository eventBridgeRepository;
-    @Autowired
-    private AppUserEnvRepository appUserEnvRepository;
-    @Autowired
     private NotificationService notificationService;
-    @Autowired
-    private EventBridgeService eventBridgeService;
-    @Autowired
     private RefreshTokenService refreshTokenService;
-    @Autowired
     private LookupDataCacheService lookupDataCacheService;
-    @Autowired
     private AuthenticationManager authenticationManager;
-    @Autowired
     private EmailMessagesFactory emailMessagesFactory;
 
-    public AuthServiceImpl() {}
+    public AuthServiceImpl(JwtUtils jwtUtils,
+        PasswordEncoder passwordEncoder,
+        RoleRepository roleRepository,
+        AppUserRepository appUserRepository,
+        ProfileRepository profileRepository,
+        TemplateRegRepository templateRegRepository,
+        NotificationService notificationService,
+        RefreshTokenService refreshTokenService,
+        LookupDataCacheService lookupDataCacheService,
+        AuthenticationManager authenticationManager,
+        EmailMessagesFactory emailMessagesFactory) {
+        this.jwtUtils = jwtUtils;
+        this.passwordEncoder = passwordEncoder;
+        this.roleRepository = roleRepository;
+        this.appUserRepository = appUserRepository;
+        this.profileRepository = profileRepository;
+        this.templateRegRepository = templateRegRepository;
+        this.notificationService = notificationService;
+        this.refreshTokenService = refreshTokenService;
+        this.lookupDataCacheService = lookupDataCacheService;
+        this.authenticationManager = authenticationManager;
+        this.emailMessagesFactory = emailMessagesFactory;
+    }
 
     /**
      * Method use for signIn appUser
@@ -80,11 +79,8 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public AppResponse signInAppUser(LoginRequest payload) throws Exception {
         logger.info("Request signInAppUser :- {}.", payload);
-        // spring auth manager will call user detail service
-        Authentication authentication = this.authenticationManager.authenticate(
-            new UsernamePasswordAuthenticationToken(payload.getUsername(), payload.getPassword()));
+        Authentication authentication = this.authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(payload.getUsername(), payload.getPassword()));
         SecurityContextHolder.getContext().setAuthentication(authentication);
-        // get the user detail from authentication
         UserSessionDetail userDetails = (UserSessionDetail) authentication.getPrincipal();
         RefreshToken refreshToken = this.refreshTokenService.createRefreshToken(userDetails.getId(), payload.getIpAddress());
         AuthResponse authResponse = new AuthResponse(this.jwtUtils.generateTokenFromUsername(userDetails.getUsername()), refreshToken.getToken());
@@ -116,7 +112,6 @@ public class AuthServiceImpl implements AuthService {
         } else if (this.appUserRepository.existsByEmail(payload.getEmail())) {
             return new AppResponse(BarcoUtil.ERROR, MessageUtil.EMAIL_ALREADY_IN_USE);
         }
-        // check if the username and email exist or not
         AppUser newAppUser = new AppUser();
         newAppUser.setFirstName(payload.getFirstName());
         newAppUser.setLastName(payload.getLastName());
@@ -127,39 +122,17 @@ public class AuthServiceImpl implements AuthService {
         newAppUser.setOrgAccount(Boolean.FALSE);
         newAppUser.setStatus(APPLICATION_STATUS.ACTIVE);
         newAppUser.setPassword(this.passwordEncoder.encode(payload.getPassword()));
-        /*
-          ALL USER REGISTER FROM THE MAIN REGISTER PAGE THEY ARE NORMAL USER
-          AND THEY WILL GET THE NORMAL ACCOUNT TYPE
-          AND THEY WILL GET THE USER DEFAULT PROFILE
-          AND THEY WILL GET THE USER DEFAULT USER ROLE
-          => admin can change the account type and profile type and role type
-          **/
-        // register user will get the default role USER
-        this.roleRepository.findByNameAndStatus(this.lookupDataCacheService.getParentLookupDataByParentLookupType(LookupUtil.DEFAULT_ROLE).getLookupValue(),
-            APPLICATION_STATUS.ACTIVE).ifPresent(role -> newAppUser.setAppUserRoles(Set.of(role)));
-        // register user will get the default profile USER
-        this.profileRepository.findProfileByProfileName(this.lookupDataCacheService.getParentLookupDataByParentLookupType(
-            LookupUtil.DEFAULT_PROFILE).getLookupValue()).ifPresent(newAppUser::setProfile);
-        // register user account type as 'Customer'
+        this.roleRepository.findByNameAndStatus(
+           this.lookupDataCacheService.getParentLookupDataByParentLookupType(LookupUtil.DEFAULT_ROLE).getLookupValue(), APPLICATION_STATUS.ACTIVE)
+           .ifPresent(role -> newAppUser.setAppUserRoles(Set.of(role)));
+        this.profileRepository.findProfileByProfileName(
+           this.lookupDataCacheService.getParentLookupDataByParentLookupType(LookupUtil.DEFAULT_PROFILE).getLookupValue())
+           .ifPresent(newAppUser::setProfile);
         newAppUser.setAccountType(ACCOUNT_TYPE.NORMAL);
         this.appUserRepository.save(newAppUser);
-        // notification & register email
-        Optional<AppUser> superAdmin = this.appUserRepository.findByUsernameAndStatus(this.lookupDataCacheService.getParentLookupDataByParentLookupType(LookupUtil.ROOT_USER).getLookupValue(), APPLICATION_STATUS.ACTIVE);
+        Optional<AppUser> superAdmin = this.appUserRepository.findByUsernameAndStatus(
+           this.lookupDataCacheService.getParentLookupDataByParentLookupType(LookupUtil.ROOT_USER).getLookupValue(), APPLICATION_STATUS.ACTIVE);
         if (superAdmin.isPresent()) {
-            // linking all env variable to the user give by the system
-            for (EnvVariables envVariables : this.envVariablesRepository.findAllByCreatedByAndStatusNotOrderByDateCreatedDesc(superAdmin.get(), APPLICATION_STATUS.DELETE)) {
-                this.appUserEnvRepository.save(this.getAppUserEnv(superAdmin.get(), newAppUser, envVariables));
-            }
-            // event bridge only receiver event bridge if exist and create by the main user
-            for (EventBridge eventBridge : this.eventBridgeRepository.findAllByBridgeTypeInAndCreatedByAndStatusNotOrderByDateCreatedDesc(
-                List.of(EVENT_BRIDGE_TYPE.WEB_HOOK_RECEIVE), superAdmin.get(), APPLICATION_STATUS.DELETE)) {
-                LinkEBURequest linkEBURequest = new LinkEBURequest();
-                linkEBURequest.setId(eventBridge.getId());
-                linkEBURequest.setAppUserId(newAppUser.getId());
-                linkEBURequest.setLinked(Boolean.TRUE);
-                linkEBURequest.setSessionUser(new SessionUser(superAdmin.get().getUsername()));
-                this.eventBridgeService.linkEventBridgeWithUser(linkEBURequest);
-            }
             this.sendNotification(MessageUtil.REQUESTED_FOR_NEW_ACCOUNT, String.format(MessageUtil.NEW_USER_REGISTER_WITH_ID,
                 newAppUser.getUuid()), superAdmin.get(), this.lookupDataCacheService, this.notificationService);
         }
@@ -181,9 +154,9 @@ public class AuthServiceImpl implements AuthService {
         }
         Optional<AppUser> appUser = this.appUserRepository.findByEmailAndStatus(payload.getEmail(), APPLICATION_STATUS.ACTIVE);
         if (appUser.isPresent()) {
-            // email and notification
             this.sendForgotPasswordEmail(appUser.get(), this.lookupDataCacheService, this.templateRegRepository, this.emailMessagesFactory, this.jwtUtils);
-            this.sendNotification(MessageUtil.FORGOT_PASSWORD, MessageUtil.FORGOT_EMAIL_SEND_TO_YOUR_EMAIL, appUser.get(), this.lookupDataCacheService, this.notificationService);
+            this.sendNotification(MessageUtil.FORGOT_PASSWORD, MessageUtil.FORGOT_EMAIL_SEND_TO_YOUR_EMAIL,
+                 appUser.get(), this.lookupDataCacheService, this.notificationService);
             return new AppResponse(BarcoUtil.SUCCESS, MessageUtil.EMAIL_SEND_SUCCESSFULLY);
         }
         return new AppResponse(BarcoUtil.ERROR, MessageUtil.ACCOUNT_NOT_EXIST);
@@ -208,7 +181,8 @@ public class AuthServiceImpl implements AuthService {
             appUser.get().setPassword(this.passwordEncoder.encode(payload.getNewPassword()));
             this.appUserRepository.save(appUser.get());
             this.sendResetPasswordEmail(appUser.get(), this.lookupDataCacheService, this.templateRegRepository, this.emailMessagesFactory);
-            this.sendNotification(MessageUtil.RESET_PASSWORD, MessageUtil.RESET_EMAIL_SEND_TO_YOUR_EMAIL, appUser.get(), this.lookupDataCacheService, this.notificationService);
+            this.sendNotification(MessageUtil.RESET_PASSWORD, MessageUtil.RESET_EMAIL_SEND_TO_YOUR_EMAIL,
+                 appUser.get(), this.lookupDataCacheService, this.notificationService);
             return new AppResponse(BarcoUtil.SUCCESS, MessageUtil.PASSWORD_RESET_SUCCESSFULLY);
         }
         return new AppResponse(BarcoUtil.ERROR, MessageUtil.ACCOUNT_NOT_EXIST);

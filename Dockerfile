@@ -1,14 +1,20 @@
-# Start with a base image containing Java runtime
-FROM openjdk:8-jdk-alpine
-# Add Maintainer Info
+# Use a slim OpenJDK base image
+FROM openjdk:11-jdk-slim
+
+# Maintainer label
 LABEL maintainer="nabeel.amd93@gmail.com"
-# Add a volume pointing to /tmp
+
+# Create a volume for temporary files
 VOLUME /tmp
-# Make 9096 available to the world outside this container
+
+# Argument to pass the JAR file from build context
+ARG JAR_FILE=target/*.jar
+
+# Copy the JAR file into the container
+COPY ${JAR_FILE} app.jar
+
+# Expose application port
 EXPOSE 9096
-# The application's jar file
-ARG JAR_FILE=/target/auth-0.0.1-SNAPSHOT.jar
-# Add the application jar to the container
-ADD ${JAR_FILE} app.jar
-# Run the jar file
-ENTRYPOINT ["java","-Djava.security.egd=file:/dev/./urandom","-jar","/app.jar"]
+
+# Run Spring Boot application
+ENTRYPOINT ["sh", "-c", "java -jar /app.jar"]

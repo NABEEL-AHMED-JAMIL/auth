@@ -27,16 +27,14 @@
 		</developer>
 	</developers>
 
+	<name>auth</name>
 	<groupId>com.barco</groupId>
 	<artifactId>auth</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
-	<name>auth</name>
+	<version>9.18.2025</version>
 	<description>Auth Api For Barco</description>
 
 	<properties>
 		<java.version>11</java.version>
-		<postgresql.version>42.2.5</postgresql.version>
-		<disruptor.version>3.4.2</disruptor.version>
 		<jpa.version>2.1.8.RELEASE</jpa.version>
 		<swagger.version>2.9.2</swagger.version>
 	</properties>
@@ -61,14 +59,14 @@
 		<dependency>
 			<groupId>com.barco</groupId>
 			<artifactId>model</artifactId>
-			<version>9.18.2024</version>
+			<version>9.18.2025</version>
 			<classifier>barco-model</classifier>
 		</dependency>
 
 		<dependency>
 			<groupId>com.barco</groupId>
 			<artifactId>common</artifactId>
-			<version>9.18.2024</version>
+			<version>9.18.2025</version>
 			<classifier>barco-common-util</classifier>
 		</dependency>
 

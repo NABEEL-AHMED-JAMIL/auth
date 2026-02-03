@@ -92,7 +92,6 @@ public class OrganizationServiceImpl implements OrganizationService {
         // check the access for role and profile for user creating
         AppUserRequest orgAppUserRequest = payload.getUser();
         AppUser orgAppUser = new AppUser();
-        orgAppUser.setOrgAccount(Boolean.TRUE); // org account
         orgAppUser.setFirstName(orgAppUserRequest.getFirstName());
         orgAppUser.setLastName(orgAppUserRequest.getLastName());
         orgAppUser.setEmail(orgAppUserRequest.getEmail());
@@ -100,7 +99,8 @@ public class OrganizationServiceImpl implements OrganizationService {
         orgAppUser.setImg(orgAppUserRequest.getProfileImg());
         orgAppUser.setIpAddress(orgAppUserRequest.getIpAddress());
         orgAppUser.setPassword(this.passwordEncoder.encode(orgAppUserRequest.getPassword()));
-        orgAppUser.setAccountType(ACCOUNT_TYPE.getByLookupCode(orgAppUserRequest.getAccountType()));
+        orgAppUser.setOrgAccount(Boolean.TRUE); // org account
+        orgAppUser.setAccountType(ACCOUNT_TYPE.CUSTOMER); // org account as customer use
         orgAppUser.setStatus(APPLICATION_STATUS.ACTIVE);
         orgAppUser.setOrganization(this.createOrganization(payload));
         // register user role default as admin role
@@ -213,12 +213,9 @@ public class OrganizationServiceImpl implements OrganizationService {
         } else if (BarcoUtil.isNull(payload.getPageSize())) {
             return new AppResponse(BarcoUtil.ERROR, MessageUtil.PAGE_SIZE_MISSING);
         }
-        Timestamp startDate = Timestamp.valueOf(payload.getStartDate().concat(BarcoUtil.START_DATE));
-        Timestamp endDate = Timestamp.valueOf(payload.getEndDate().concat(BarcoUtil.END_DATE));
         // query
         StringBuilder orgQl = new StringBuilder("SELECT new com.barco.model.repository.projection.OrganizationProjection(")
-        .append("org.id AS orgId, org.uuid AS orgUuid, org.name AS orgName, org.address AS orgAddress, org.phone AS orgPhone, org.status AS orgStatus, " +
-            "org.dateCreated, au.username, au.email, au.accountType) ")
+        .append("org.id AS orgId, org.uuid AS orgUuid, org.name AS orgName, org.address AS orgAddress, org.phone AS orgPhone, org.status AS orgStatus, org.dateCreated, au.username, au.email, au.accountType) ")
         .append("FROM Organization org ")
         .append("INNER JOIN org.appUser au ")
         .append("WHERE au.status != ").append(APPLICATION_STATUS.DELETE.getLookupCode())
@@ -227,18 +224,18 @@ public class OrganizationServiceImpl implements OrganizationService {
         .append(" AND org.dateCreated BETWEEN :startDate AND :endDate");
         // Parameters to bind
         Map<String, Object> parameters = new HashMap<>();
-        parameters.put("startDate", startDate);
-        parameters.put("endDate", endDate);
+        parameters.put("startDate", Timestamp.valueOf(payload.getStartDate().concat(BarcoUtil.START_DATE)));
+        parameters.put("endDate", Timestamp.valueOf(payload.getEndDate().concat(BarcoUtil.END_DATE)));
         // Add filters dynamically
-        if (!BarcoUtil.isNull(payload.getName())) {
+        if (!BarcoUtil.isNull(payload.getName())) { // org name
             orgQl.append(" AND LOWER(org.name) LIKE LOWER(CONCAT('%', :orgName, '%')) ");
             parameters.put("orgName", payload.getName());
         }
-        if (!BarcoUtil.isNull(payload.getUser()) && !BarcoUtil.isNull(payload.getUser().getEmail())) {
+        if (!BarcoUtil.isNull(payload.getUser()) && !BarcoUtil.isNull(payload.getUser().getEmail())) { // org app user account
             orgQl.append(" AND LOWER(au.email) LIKE LOWER(CONCAT('%', :email, '%')) ");
             parameters.put("email", payload.getUser().getEmail());
         }
-        if (!BarcoUtil.isNull(payload.getUser()) && !BarcoUtil.isNull(payload.getUser().getUsername())) {
+        if (!BarcoUtil.isNull(payload.getUser()) && !BarcoUtil.isNull(payload.getUser().getUsername())) { // org app username
             orgQl.append(" AND LOWER(au.username) LIKE LOWER(CONCAT('%', :username, '%')) ");
             parameters.put("username", payload.getUser().getUsername());
         }
@@ -246,30 +243,29 @@ public class OrganizationServiceImpl implements OrganizationService {
         Page<OrganizationProjection> response = this.queryService.fetchResultWithPagination(orgQl.toString(), parameters,
             PageRequest.of(payload.getPageNumber(), payload.getPageSize()), OrganizationProjection.class);
         // Optionally, wrap the list in a PageImpl to return paginated response if needed
-        Page<OrganizationResponse> updatedResponsePage = new PageImpl<>(response.get()
-            .map(organizationProjection -> {
-                OrganizationResponse organizationResponse = new OrganizationResponse();
-                // Set organization details
-                organizationResponse.setUuid(organizationProjection.getOrgUuid());
-                organizationResponse.setName(organizationProjection.getOrgName());
-                organizationResponse.setAddress(organizationProjection.getOrgAddress());
-                organizationResponse.setPhone(organizationProjection.getOrgPhone());
-                organizationResponse.setDateCreated((Timestamp) organizationProjection.getDateCreated());
-                organizationResponse.setStatus(APPLICATION_STATUS.getStatusByLookupCode(organizationProjection.getOrgStatus().getLookupCode()));
-                // Set app user details
-                AppUserResponse appUserResponse = new AppUserResponse();
-                appUserResponse.setEmail(organizationProjection.getEmail());
-                appUserResponse.setUsername(organizationProjection.getUsername());
-                // Set account type if present
-                if (!BarcoUtil.isNull(organizationProjection.getAccountType())) {
-                    GLookup accountType = GLookup.getGLookup(this.lookupDataCacheService.getChildLookupDataByParentLookupTypeAndChildLookupCode(
-                        ACCOUNT_TYPE.getName(), organizationProjection.getAccountType().getLookupCode()));
-                    appUserResponse.setAccountType(accountType);
-                }
-                organizationResponse.setOwner(appUserResponse);
-                this.fillOrganizationStatistics(organizationProjection, organizationResponse);
-                return organizationResponse;
-            }).collect(Collectors.toList()), PageRequest.of(payload.getPageNumber(), payload.getPageSize()), response.getTotalElements());
+        Page<OrganizationResponse> updatedResponsePage = new PageImpl<>(response.get().map(organizationProjection -> {
+            // Set organization details
+            OrganizationResponse organizationResponse = new OrganizationResponse();
+            organizationResponse.setUuid(organizationProjection.getOrgUuid());
+            organizationResponse.setName(organizationProjection.getOrgName());
+            organizationResponse.setAddress(organizationProjection.getOrgAddress());
+            organizationResponse.setPhone(organizationProjection.getOrgPhone());
+            organizationResponse.setDateCreated((Timestamp) organizationProjection.getDateCreated());
+            organizationResponse.setStatus(APPLICATION_STATUS.getStatusByLookupCode(organizationProjection.getOrgStatus().getLookupCode()));
+            // Set app user details
+            AppUserResponse appUserResponse = new AppUserResponse();
+            appUserResponse.setEmail(organizationProjection.getEmail());
+            appUserResponse.setUsername(organizationProjection.getUsername());
+            // Set account type if present
+            if (!BarcoUtil.isNull(organizationProjection.getAccountType())) {
+                GLookup accountType = GLookup.getGLookup(this.lookupDataCacheService.getChildLookupDataByParentLookupTypeAndChildLookupCode(
+                    ACCOUNT_TYPE.getName(), organizationProjection.getAccountType().getLookupCode()));
+                appUserResponse.setAccountType(accountType);
+            }
+            organizationResponse.setOwner(appUserResponse);
+            this.fillOrganizationStatistics(organizationProjection, organizationResponse);
+            return organizationResponse;
+        }).collect(Collectors.toList()), PageRequest.of(payload.getPageNumber(), payload.getPageSize()), response.getTotalElements());
         return new AppResponse(BarcoUtil.SUCCESS, MessageUtil.DATA_FETCH_SUCCESSFULLY, updatedResponsePage);
     }
 
@@ -333,8 +329,6 @@ public class OrganizationServiceImpl implements OrganizationService {
             return new AppResponse(BarcoUtil.ERROR, MessageUtil.ROLE_MISSING);
         } else if (BarcoUtil.isNull(user.getProfile())) {
             return new AppResponse(BarcoUtil.ERROR, MessageUtil.PROFILE_MISSING);
-        } else if (BarcoUtil.isNull(user.getAccountType())) {
-            return new AppResponse(BarcoUtil.ERROR, MessageUtil.PROFILE_ACCOUNT_TYPE_MISSING);
         }
         return (AppResponse) BarcoUtil.NULL;
     }
@@ -346,14 +340,14 @@ public class OrganizationServiceImpl implements OrganizationService {
      * @throws Exception
      * */
     private Organization createOrganization(OrganizationRequest payload) throws Exception {
-        Optional<AppUser> appUserOpt = this.appUserRepository.findByUsernameAndStatus(payload.getSessionUser().getUsername(), APPLICATION_STATUS.ACTIVE);
+        Optional<AppUser> appUser = this.appUserRepository.findByUsernameAndStatus(payload.getSessionUser().getUsername(), APPLICATION_STATUS.ACTIVE);
         Organization organization = new Organization();
         organization.setName(payload.getName());
         organization.setPhone(payload.getPhone());
         organization.setAddress(payload.getAddress());
         organization.setCountry(this.etlCountryRepository.findByCountryCode(payload.getCountryCode()).get());
-        organization.setCreatedBy(appUserOpt.get());
-        organization.setUpdatedBy(appUserOpt.get());
+        organization.setCreatedBy(appUser.get());
+        organization.setUpdatedBy(appUser.get());
         organization.setStatus(APPLICATION_STATUS.ACTIVE);
         return organization;
     }
@@ -366,13 +360,13 @@ public class OrganizationServiceImpl implements OrganizationService {
      * @throws Exception
      * */
     private Organization updateOrganizationFromPayload(Organization organization, OrganizationRequest payload) throws Exception {
-        Optional<AppUser> appUserOpt = this.appUserRepository.findByUsernameAndStatus(payload.getSessionUser().getUsername(), APPLICATION_STATUS.ACTIVE);
+        Optional<AppUser> appUser = this.appUserRepository.findByUsernameAndStatus(payload.getSessionUser().getUsername(), APPLICATION_STATUS.ACTIVE);
         organization.setName(payload.getName());
         organization.setPhone(payload.getPhone());
         organization.setAddress(payload.getAddress());
         organization.setCountry(this.etlCountryRepository.findByCountryCode(payload.getCountryCode()).get());
         organization.setStatus(APPLICATION_STATUS.getByLookupCode(payload.getStatus()));
-        appUserOpt.ifPresent(organization::setUpdatedBy);
+        appUser.ifPresent(organization::setUpdatedBy);
         return organization;
     }
 
@@ -386,35 +380,29 @@ public class OrganizationServiceImpl implements OrganizationService {
         Map<String, Object> orgStatistic = new HashMap<>();
         // APP_SETTING_STATISTICS
         QueryResponse queryResponse;
-        String APP_SETTING_STATISTICS = "APP_SETTING_STATISTICS";
         queryResponse = this.queryService.executeQueryResponse(String.format(QueryService.APP_SETTING_STATISTICS, organizationProjection.getOrgId()));
         queryResponse.setQuery((String) BarcoUtil.NULL);
-        orgStatistic.put(APP_SETTING_STATISTICS, queryResponse);
+        orgStatistic.put("APP_SETTING_STATISTICS", queryResponse);
         // PROFILE_SETTING_STATISTICS
-        String PROFILE_SETTING_STATISTICS = "PROFILE_SETTING_STATISTICS";
         queryResponse = this.queryService.executeQueryResponse(String.format(QueryService.PROFILE_SETTING_STATISTICS, organizationProjection.getOrgId()));
         queryResponse.setQuery((String) BarcoUtil.NULL);
-        orgStatistic.put(PROFILE_SETTING_STATISTICS, queryResponse);
+        orgStatistic.put("PROFILE_SETTING_STATISTICS", queryResponse);
         // FORM_SETTING_STATISTICS
-        String FORM_SETTING_STATISTICS = "FORM_SETTING_STATISTICS";
         queryResponse = this.queryService.executeQueryResponse(String.format(QueryService.FORM_SETTING_STATISTICS, organizationProjection.getOrgId()));
         queryResponse.setQuery((String) BarcoUtil.NULL);
-        orgStatistic.put(FORM_SETTING_STATISTICS, queryResponse);
+        orgStatistic.put("FORM_SETTING_STATISTICS", queryResponse);
         // DASHBOARD_AND_REPORT_SETTING_STATISTICS
-        String DASHBOARD_AND_REPORT_SETTING_STATISTICS = "DASHBOARD_AND_REPORT_SETTING_STATISTICS";
         queryResponse = this.queryService.executeQueryResponse(String.format(QueryService.DASHBOARD_AND_REPORT_SETTING_STATISTICS, organizationProjection.getOrgId()));
         queryResponse.setQuery((String) BarcoUtil.NULL);
-        orgStatistic.put(DASHBOARD_AND_REPORT_SETTING_STATISTICS, queryResponse);
+        orgStatistic.put("DASHBOARD_AND_REPORT_SETTING_STATISTICS", queryResponse);
         // SERVICE_SETTING_STATISTICS
-        String SERVICE_SETTING_STATISTICS = "SERVICE_SETTING_STATISTICS";
         queryResponse = this.queryService.executeQueryResponse(String.format(QueryService.SERVICE_SETTING_STATISTICS, organizationProjection.getOrgId()));
         queryResponse.setQuery((String) BarcoUtil.NULL);
-        orgStatistic.put(SERVICE_SETTING_STATISTICS, queryResponse);
+        orgStatistic.put("SERVICE_SETTING_STATISTICS", queryResponse);
         // SESSION_COUNT_STATISTICS
-        String SESSION_COUNT_STATISTICS = "SESSION_COUNT_STATISTICS";
         queryResponse = this.queryService.executeQueryResponse(String.format(QueryService.SESSION_COUNT_STATISTICS, organizationProjection.getOrgId()));
         queryResponse.setQuery((String) BarcoUtil.NULL);
-        orgStatistic.put(SESSION_COUNT_STATISTICS, queryResponse);
+        orgStatistic.put("SESSION_COUNT_STATISTICS", queryResponse);
         // adding org statistic data to each response
         organizationResponse.setOrgStatistic(orgStatistic);
     }

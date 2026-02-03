@@ -1,0 +1,12 @@
+export MAIL_HOST=sandbox.smtp.mailtrap.io
+export MAIL_USERNAME=488af377a62331
+export MAIL_PASSWORD=827886bc8aaf08
+export MIN_THREADS=20
+export MAX_THREADS=50
+export DATA_SOURCE_URL=localhost:5432
+export DATA_BASE=batch_process_v3
+export DATA_SOURCE_USERNAME=postgres
+export DATA_SOURCE_PASSWORD=admin
+export JWT_SECRET=f9A7b3E8x2Rk!sD4pQz7Lw8Jv1Nf6Ht9
+export JWT_EXPIRATION=86400000
+export JWT_REFRESH_EXPIRATION=604800000
