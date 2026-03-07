@@ -1,0 +1,170 @@
+openapi: 3.0.1
+info:
+  title: "Auth Service API (static spec)"
+  version: "1.0.0"
+  description: "Auth Service API for user authentication and JWT token management and authorization. 
+      Give user profile after successful sign-in."
+  termsOfService: "/api/v2/openapi.yml"
+  contact:
+    name: "Nabeel Ahmed"
+    email: "nabeel.amd93@gmail.com"
+servers:
+  - url: /api/v2
+    description: Relative server path — requests will be sent to the current host with this base path
+tags:
+  - name: Auth
+    description: Authentication operations (sign-in)
+paths:
+  /auth/signIn:
+    post:
+      tags: [Auth]
+      summary: Authenticate user and return JWT token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Authentication successful — wrapper response with token data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppResponse'
+              example:
+                message: "Signed in successfully"
+                status: "SUCCESS"
+                returnCode: "OK"
+                statusCode: 200
+                data:
+                  accessToken: "REDACTED"
+                  refreshToken: "REDACTED"
+                  tokenType: "Bearer"
+                  expiresIn: 86400000
+                  issuedAt: 1772912913624
+                  userId: "34d18edd-35d0-4162-b0ee-c64169116a65"
+                  username: "root@etl"
+                  activeProfile: "ETL.ROOT.ACCOUNT.PROFILE"
+                timestamp: 1772912913627
+        '400':
+          description: Bad request — validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
+              example:
+                message: "Validation failed"
+                status: "ERROR"
+                returnCode: "BAD_REQUEST"
+                statusCode: 400
+                data:
+                  - object: "loginRequest"
+                    field: "password"
+                    message: "password must not be blank"
+                  - object: "loginRequest"
+                    field: "username"
+                    message: "username must not be blank"
+                timestamp: 1772915233179
+                path: "/api/v2/auth/signIn"
+        '401':
+          description: Unauthorized — invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppResponse'
+              example:
+                message: "Invalid username or password"
+                status: "ERROR"
+                returnCode: "UNAUTHORIZED"
+                statusCode: 401
+                timestamp: 1772915099689
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    LoginRequest:
+      type: object
+      properties:
+        username:
+          type: string
+          example: user@example.com
+        password:
+          type: string
+          format: password
+        ipAddress:
+          type: string
+          example: 127.0.0.1
+      required: [username, password]
+    AuthSignInData:
+      type: object
+      description: Token and user data returned on successful sign-in
+      properties:
+        accessToken:
+          type: string
+        refreshToken:
+          type: string
+        tokenType:
+          type: string
+        expiresIn:
+          type: integer
+        issuedAt:
+          type: integer
+        userId:
+          type: string
+          format: uuid
+        username:
+          type: string
+        activeProfile:
+          type: string
+    AppResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        status:
+          type: string
+        returnCode:
+          type: string
+        statusCode:
+          type: integer
+        data:
+          $ref: '#/components/schemas/AuthSignInData'
+        timestamp:
+          type: integer
+      required: [message, status, returnCode, statusCode]
+    ValidationError:
+      type: object
+      properties:
+        object:
+          type: string
+        field:
+          type: string
+        message:
+          type: string
+      required: [object, field, message]
+    ValidationErrorResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        status:
+          type: string
+        returnCode:
+          type: string
+        statusCode:
+          type: integer
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ValidationError'
+        timestamp:
+          type: integer
+        path:
+          type: string
+      required: [message, status, returnCode, statusCode, data]
+security:
+  - bearerAuth: []
