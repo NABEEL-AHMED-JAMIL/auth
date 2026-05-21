@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <!-- log folder from application.properties -->
+    <property name="LOG_FOLDER" value="${logging.file.path:-./logs}"/>
+    <!-- main log file -->
+    <property name="HOME_LOG" value="${LOG_FOLDER}/auth.log"/>
+    <!-- Console Appender -->
+    <appender name="CONSOLE-ROLLING" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>
+                %d{yyyy-MM-dd HH:mm:ss.SSS} %5p ${hostName} --- [%15.15t] %-40.40c{1.} : %m%n%ex
+            </pattern>
+        </encoder>
+    </appender>
+
+    <!-- Rolling File Appender -->
+    <appender name="FILE-ROLLING" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <!-- current active log -->
+        <file>${HOME_LOG}</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <!-- archive logs -->
+            <fileNamePattern>
+                ${LOG_FOLDER}/archived/auth.%d{yyyy-MM-dd}.%i.log
+            </fileNamePattern>
+            <!-- max file size -->
+            <maxFileSize>10MB</maxFileSize>
+            <!-- total archive size -->
+            <totalSizeCap>20GB</totalSizeCap>
+            <!-- keep logs for 60 days -->
+            <maxHistory>60</maxHistory>
+        </rollingPolicy>
+        <encoder>
+            <pattern>
+                %d{yyyy-MM-dd HH:mm:ss.SSS} %5p ${hostName} --- [%15.15t] %-40.40c{1.} : %m%n%ex
+            </pattern>
+        </encoder>
+    </appender>
+
+    <!-- package logger -->
+    <logger name="com.barco.auth" level="DEBUG" additivity="false">
+        <appender-ref ref="CONSOLE-ROLLING"/>
+        <appender-ref ref="FILE-ROLLING"/>
+    </logger>
+
+    <!-- root logger -->
+    <root level="ERROR">
+        <appender-ref ref="FILE-ROLLING"/>
+    </root>
+
+</configuration>

@@ -32,7 +32,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(WebSecurityConfig.class);
 
-    // Pretty, centralised whitelist for actuator + swagger + openapi
+    // Pretty, centralized whitelist for actuator + swagger + open-api
     private static final String[] PUBLIC_SWAGGER_ACTUATOR = new String[] {
         "/actuator/**",
         "/openapi.yml",
